@@ -65,4 +65,691 @@
   .card h3 { font-size: 14px; margin-bottom: 10px; color: #a8a8c8; font-weight: 500; }
   .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #22223a; }
   .row:last-child { border-bottom: none; }
-  .row-label {
+  .row-label { font-size: 14px; }
+  .row-sub { font-size: 11px; color: #7878a0; }
+  .row-amount { font-size: 14px; font-weight: 600; }
+  .positive { color: #4ecdc4; }
+  .negative { color: #ff6b6b; }
+  .warning { color: #ffd166; }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .summary-box {
+    background: #1a1a2e;
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid #2a2a3e;
+  }
+  .summary-box .label { font-size: 11px; color: #8888a8; margin-bottom: 4px; }
+  .summary-box .value { font-size: 20px; font-weight: 700; }
+  .btn {
+    background: #4ecdc4;
+    color: #0f0f1a;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 8px;
+  }
+  .btn-secondary {
+    background: #2a2a4e;
+    color: #e8e8f0;
+  }
+  .btn-danger {
+    background: #ff6b6b;
+    color: #1a1a1a;
+  }
+  .fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #4ecdc4;
+    color: #0f0f1a;
+    font-size: 28px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 90;
+  }
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #16213e;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 20px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 { font-size: 16px; margin-bottom: 16px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: #8888a8; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%;
+    background: #1a1a2e;
+    border: 1px solid #2a2a4e;
+    color: #e8e8f0;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .field-row { display: flex; gap: 8px; }
+  .field-row .field { flex: 1; }
+  .close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: #8888a8;
+    font-size: 20px;
+  }
+  .modal { position: relative; }
+  .month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .month-nav button {
+    background: #2a2a4e;
+    border: none;
+    color: #e8e8f0;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  .month-nav .month-label { font-size: 15px; font-weight: 600; }
+  .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #2a2a4e;
+  }
+  .badge.urgent { background: #4a2020; color: #ff8888; }
+  .badge.ok { background: #1a3a3a; color: #4ecdc4; }
+  .empty-state { text-align: center; padding: 30px 16px; color: #6868888; }
+  .msi-item { background: #22223a; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 12px; }
+  .login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 24px;
+    text-align: center;
+  }
+  .login-screen h1 { font-size: 22px; margin-bottom: 8px; }
+  .login-screen p { font-size: 13px; color: #8888a8; margin-bottom: 24px; }
+  #g_id_signin_container { display: flex; justify-content: center; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-screen">
+  <h1>Control de Gastos</h1>
+  <p>Inicia sesión con Google para sincronizar tus datos entre tus dispositivos.</p>
+  <div id="g_id_signin_container"></div>
+  <button class="btn btn-secondary" style="margin-top:20px;max-width:280px" onclick="continueOffline()">Usar sin sincronizar (solo este dispositivo)</button>
+</div>
+
+<div id="app" class="hidden">
+  <div class="header">
+    <h1>Control de Gastos</h1>
+    <div class="sync-bar">
+      <button onclick="syncNow()">⟳ Sincronizar</button>
+      <button onclick="openConfigModal()">⚙ Config</button>
+      <span class="sync-status" id="syncStatus">Sin conectar</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="resumen" onclick="switchTab('resumen')">Resumen</div>
+    <div class="tab" data-tab="tarjetas" onclick="switchTab('tarjetas')">Tarjetas</div>
+    <div class="tab" data-tab="fijos" onclick="switchTab('fijos')">Fijos</div>
+    <div class="tab" data-tab="variables" onclick="switchTab('variables')">Variables</div>
+    <div class="tab" data-tab="ingresos" onclick="switchTab('ingresos')">Ingresos</div>
+  </div>
+
+  <div class="content">
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="month-label" id="monthLabel">Julio 2026</div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+
+    <div id="tab-resumen" class="tab-content">
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="label">Ingresos del mes</div>
+          <div class="value positive" id="sumIngresos">$0</div>
+        </div>
+        <div class="summary-box">
+          <div class="label">Gastos del mes</div>
+          <div class="value negative" id="sumGastos">$0</div>
+        </div>
+        <div class="summary-box">
+          <div class="label">Balance real</div>
+          <div class="value" id="sumBalance">$0</div>
+        </div>
+        <div class="summary-box">
+          <div class="label">Fondo de ahorro</div>
+          <div class="value positive" id="sumAhorro">$0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Próximos pagos de tarjetas</h3>
+        <div id="proximosPagos"></div>
+      </div>
+
+      <div class="card">
+        <h3>Desglose de gastos</h3>
+        <div id="desglose"></div>
+      </div>
+    </div>
+
+    <div id="tab-tarjetas" class="tab-content hidden">
+      <div id="tarjetasList"></div>
+      <button class="btn" onclick="openCompraModal()">+ Agregar compra a tarjeta</button>
+    </div>
+
+    <div id="tab-fijos" class="tab-content hidden">
+      <div id="fijosList"></div>
+      <button class="btn" onclick="openGastoModal('fijo')">+ Agregar gasto fijo</button>
+    </div>
+
+    <div id="tab-variables" class="tab-content hidden">
+      <div id="variablesList"></div>
+      <button class="btn" onclick="openGastoModal('variable')">+ Agregar gasto variable</button>
+    </div>
+
+    <div id="tab-ingresos" class="tab-content hidden">
+      <div id="ingresosList"></div>
+      <button class="btn" onclick="openIngresoModal()">+ Agregar ingreso</button>
+    </div>
+  </div>
+</div>
+
+<button class="fab hidden" id="fabBtn" onclick="quickAdd()">+</button>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const CLIENT_ID = '499545484520-tavrihofnu9n1af068f9b120ilhki39i.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+const FILE_NAME = 'gastos-data.json';
+
+let tokenClient;
+let accessToken = null;
+let driveFileId = null;
+let offlineMode = false;
+
+let currentDate = new Date(2026, 6, 1);
+let db = {
+  tarjetas: {
+    mercadoPago: { nombre: 'Mercado Pago', diaPago: 'ultimo', compras: [] },
+    nu: { nombre: 'Nu', diaPago: 9, compras: [] },
+    liverpool: { nombre: 'Liverpool', diaPago: 6, compras: [] },
+    palacioHierro: { nombre: 'Palacio de Hierro', diaPago: 7, compras: [] },
+    bbva: { nombre: 'BBVA', diaPago: 12, compras: [] },
+    autoCredito: { nombre: 'Crédito del carro', diaPago: 'quincenal', compras: [] }
+  },
+  fijos: [
+    { id: 'luz', nombre: 'Luz', monto: 0, frecuencia: 'bimestral', ultimoMes: null }
+  ],
+  variables: [],
+  ingresos: [],
+  config: {
+    sueldoMensual: 36000,
+    porcentajeAhorro: 11
+  }
+};
+
+function ymKey(date) {
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+}
+
+function saveLocal() {
+  localStorage.setItem('gastosDB', JSON.stringify(db));
+}
+
+function loadLocal() {
+  const raw = localStorage.getItem('gastosDB');
+  if (raw) {
+    try { db = JSON.parse(raw); } catch(e) {}
+  }
+}
+
+window.onload = function() {
+  loadLocal();
+  if (localStorage.getItem('offlineChoice') === 'true') {
+    continueOffline();
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) { console.error(resp); return; }
+      accessToken = resp.access_token;
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('fabBtn').classList.remove('hidden');
+      document.getElementById('syncStatus').textContent = 'Conectado a Drive';
+      loadFromDrive();
+    }
+  });
+  document.getElementById('g_id_signin_container').innerHTML =
+    '<button class="btn" style="max-width:280px" onclick="signIn()">Iniciar sesión con Google</button>';
+};
+
+function signIn() {
+  tokenClient.requestAccessToken();
+}
+
+function continueOffline() {
+  offlineMode = true;
+  localStorage.setItem('offlineChoice', 'true');
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('fabBtn').classList.remove('hidden');
+  document.getElementById('syncStatus').textContent = 'Modo local (sin sincronizar)';
+  renderAll();
+}
+
+async function driveFind() {
+  const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' + FILE_NAME + '%27', {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const data = await res.json();
+  return (data.files && data.files.length) ? data.files[0].id : null;
+}
+
+async function loadFromDrive() {
+  document.getElementById('syncStatus').textContent = 'Cargando...';
+  driveFileId = await driveFind();
+  if (driveFileId) {
+    const res = await fetch('https://www.googleapis.com/drive/v3/files/' + driveFileId + '?alt=media', {
+      headers: { Authorization: 'Bearer ' + accessToken }
+    });
+    const remote = await res.json();
+    db = remote;
+    saveLocal();
+  } else {
+    await saveToDrive();
+  }
+  document.getElementById('syncStatus').textContent = 'Sincronizado';
+  renderAll();
+}
+
+async function saveToDrive() {
+  if (!accessToken) return;
+  document.getElementById('syncStatus').textContent = 'Guardando...';
+  const metadata = { name: FILE_NAME, parents: driveFileId ? undefined : ['appDataFolder'] };
+  const boundary = 'boundary_gastos_app';
+  const body =
+    '--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(metadata) +
+    '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(db) +
+    '\r\n--' + boundary + '--';
+
+  const url = driveFileId
+    ? 'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=multipart'
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+
+  const res = await fetch(url, {
+    method: driveFileId ? 'PATCH' : 'POST',
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'multipart/related; boundary=' + boundary
+    },
+    body: body
+  });
+  const data = await res.json();
+  if (data.id) driveFileId = data.id;
+  document.getElementById('syncStatus').textContent = 'Sincronizado';
+}
+
+function syncNow() {
+  saveLocal();
+  if (accessToken) {
+    saveToDrive();
+  } else if (!offlineMode) {
+    signIn();
+  } else {
+    document.getElementById('syncStatus').textContent = 'Modo local (sin sincronizar)';
+  }
+}
+
+function persist() {
+  saveLocal();
+  if (accessToken) saveToDrive();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+}
+
+function changeMonth(delta) {
+  currentDate.setMonth(currentDate.getMonth() + delta);
+  renderAll();
+}
+
+function formatMoney(n) {
+  return '$' + Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function renderAll() {
+  document.getElementById('monthLabel').textContent = MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
+  renderResumen();
+  renderTarjetas();
+  renderFijos();
+  renderVariables();
+  renderIngresos();
+}
+
+function mesesTranscurridos(fechaCompra, fechaActual) {
+  return (fechaActual.getFullYear() - fechaCompra.getFullYear()) * 12 + (fechaActual.getMonth() - fechaCompra.getMonth());
+}
+
+function mensualidadCompra(compra, mesRef) {
+  const fc = new Date(compra.fecha);
+  const idx = mesesTranscurridos(fc, mesRef);
+  if (idx < 0 || idx >= compra.meses) return 0;
+  return compra.monto / compra.meses;
+}
+
+function totalTarjetaMes(tarjetaKey, mesRef) {
+  const t = db.tarjetas[tarjetaKey];
+  let total = 0;
+  t.compras.forEach(c => { total += mensualidadCompra(c, mesRef); });
+  return total;
+}
+
+function renderResumen() {
+  const mk = ymKey(currentDate);
+  let totalIngresos = 0;
+  db.ingresos.filter(i => i.mes === mk).forEach(i => totalIngresos += Number(i.monto));
+
+  let totalGastos = 0;
+  let desgloseHtml = '';
+
+  let totalTarjetas = 0;
+  Object.keys(db.tarjetas).forEach(key => {
+    const t = totalTarjetaMes(key, currentDate);
+    totalTarjetas += t;
+  });
+  if (totalTarjetas > 0) {
+    desgloseHtml += '<div class="row"><span class="row-label">Tarjetas (mensualidades)</span><span class="row-amount negative">' + formatMoney(totalTarjetas) + '</span></div>';
+  }
+  totalGastos += totalTarjetas;
+
+  let totalFijos = 0;
+  db.fijos.forEach(f => {
+    let aplica = false;
+    if (f.frecuencia === 'mensual') aplica = true;
+    else if (f.frecuencia === 'bimestral') {
+      const mesesDesdeInicio = mesesTranscurridos(new Date(f.ultimoMes || currentDate), currentDate);
+      aplica = (mesesDesdeInicio % 2 === 0);
+    }
+    if (aplica) totalFijos += Number(f.monto);
+  });
+  if (totalFijos > 0) {
+    desgloseHtml += '<div class="row"><span class="row-label">Gastos fijos</span><span class="row-amount negative">' + formatMoney(totalFijos) + '</span></div>';
+  }
+  totalGastos += totalFijos;
+
+  let totalVariables = 0;
+  db.variables.filter(v => v.mes === mk).forEach(v => totalVariables += Number(v.monto));
+  if (totalVariables > 0) {
+    desgloseHtml += '<div class="row"><span class="row-label">Gastos variables</span><span class="row-amount negative">' + formatMoney(totalVariables) + '</span></div>';
+  }
+  totalGastos += totalVariables;
+
+  if (!desgloseHtml) desgloseHtml = '<div class="empty-state">Sin gastos registrados este mes.</div>';
+
+  document.getElementById('sumIngresos').textContent = formatMoney(totalIngresos);
+  document.getElementById('sumGastos').textContent = formatMoney(totalGastos);
+  const balance = totalIngresos - totalGastos;
+  const balEl = document.getElementById('sumBalance');
+  balEl.textContent = formatMoney(balance);
+  balEl.className = 'value ' + (balance >= 0 ? 'positive' : 'negative');
+
+  const ahorro = (db.config.sueldoMensual * db.config.porcentajeAhorro / 100);
+  document.getElementById('sumAhorro').textContent = formatMoney(ahorro);
+
+  document.getElementById('desglose').innerHTML = desgloseHtml;
+
+  const diasPago = [
+    { nombre: 'Mercado Pago', dia: 'Último día del mes' },
+    { nombre: 'Nu', dia: 'Antes del día 9' },
+    { nombre: 'Liverpool', dia: 'Antes del día 6' },
+    { nombre: 'Palacio de Hierro', dia: 'Antes del día 7' },
+    { nombre: 'BBVA', dia: 'Antes del día 12' },
+    { nombre: 'Crédito del carro', dia: 'Día 15 y último día' }
+  ];
+  document.getElementById('proximosPagos').innerHTML = diasPago.map(p =>
+    '<div class="row"><span class="row-label">' + p.nombre + '</span><span class="badge">' + p.dia + '</span></div>'
+  ).join('');
+}
+
+function renderTarjetas() {
+  let html = '';
+  Object.keys(db.tarjetas).forEach(key => {
+    const t = db.tarjetas[key];
+    const totalMes = totalTarjetaMes(key, currentDate);
+    const comprasActivas = t.compras.filter(c => {
+      const idx = mesesTranscurridos(new Date(c.fecha), currentDate);
+      return idx >= 0 && idx < c.meses;
+    });
+    html += '<div class="card">';
+    html += '<h3>' + t.nombre + ' <span class="badge">' + formatMoney(totalMes) + '</span></h3>';
+    if (comprasActivas.length === 0) {
+      html += '<div class="empty-state">Sin compras activas este mes.</div>';
+    } else {
+      comprasActivas.forEach(c => {
+        const idx = mesesTranscurridos(new Date(c.fecha), currentDate);
+        html += '<div class="msi-item"><strong>' + c.concepto + '</strong><br>' +
+          'Mensualidad ' + (idx + 1) + '/' + c.meses + ' · ' + formatMoney(c.monto / c.meses) +
+          ' · Total: ' + formatMoney(c.monto) + '</div>';
+      });
+    }
+    html += '</div>';
+  });
+  document.getElementById('tarjetasList').innerHTML = html;
+}
+
+function renderFijos() {
+  if (db.fijos.length === 0) {
+    document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos. Agrega uno.</div>';
+    return;
+  }
+  let html = '';
+  db.fijos.forEach((f, i) => {
+    html += '<div class="card"><div class="row"><div><div class="row-label">' + f.nombre + '</div>' +
+      '<div class="row-sub">' + (f.frecuencia === 'bimestral' ? 'Cada 2 meses' : 'Mensual') + '</div></div>' +
+      '<span class="row-amount negative">' + formatMoney(f.monto) + '</span></div>' +
+      '<button class="btn btn-danger" onclick="deleteFijo(' + i + ')">Eliminar</button></div>';
+  });
+  document.getElementById('fijosList').innerHTML = html;
+}
+
+function renderVariables() {
+  const mk = ymKey(currentDate);
+  const items = db.variables.filter(v => v.mes === mk);
+  if (items.length === 0) {
+    document.getElementById('variablesList').innerHTML = '<div class="empty-state">Sin gastos variables este mes.</div>';
+    return;
+  }
+  let html = '';
+  db.variables.forEach((v, i) => {
+    if (v.mes !== mk) return;
+    html += '<div class="card"><div class="row"><div><div class="row-label">' + v.concepto + '</div>' +
+      '<div class="row-sub">' + v.fecha + '</div></div>' +
+      '<span class="row-amount negative">' + formatMoney(v.monto) + '</span></div>' +
+      '<button class="btn btn-danger" onclick="deleteVariable(' + i + ')">Eliminar</button></div>';
+  });
+  document.getElementById('variablesList').innerHTML = html;
+}
+
+function renderIngresos() {
+  const mk = ymKey(currentDate);
+  const items = db.ingresos.filter(v => v.mes === mk);
+  if (items.length === 0) {
+    document.getElementById('ingresosList').innerHTML = '<div class="empty-state">Sin ingresos este mes.</div>';
+    return;
+  }
+  let html = '';
+  db.ingresos.forEach((v, i) => {
+    if (v.mes !== mk) return;
+    html += '<div class="card"><div class="row"><div><div class="row-label">' + v.concepto + '</div>' +
+      '<div class="row-sub">' + v.fecha + '</div></div>' +
+      '<span class="row-amount positive">' + formatMoney(v.monto) + '</span></div>' +
+      '<button class="btn btn-danger" onclick="deleteIngreso(' + i + ')">Eliminar</button></div>';
+  });
+  document.getElementById('ingresosList').innerHTML = html;
+}
+
+function deleteFijo(i) { db.fijos.splice(i, 1); persist(); renderAll(); }
+function deleteVariable(i) { db.variables.splice(i, 1); persist(); renderAll(); }
+function deleteIngreso(i) { db.ingresos.splice(i, 1); persist(); renderAll(); }
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function openCompraModal() {
+  const options = Object.keys(db.tarjetas).map(k => '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>').join('');
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Agregar compra a tarjeta</h2>' +
+    '<div class="field"><label>Tarjeta</label><select id="mTarjeta">' + options + '</select></div>' +
+    '<div class="field"><label>Concepto</label><input id="mConcepto" placeholder="Ej. Refrigerador"></div>' +
+    '<div class="field-row">' +
+    '<div class="field"><label>Monto total</label><input id="mMonto" type="number" placeholder="0.00"></div>' +
+    '<div class="field"><label>Meses (MSI)</label><input id="mMeses" type="number" value="1"></div>' +
+    '</div>' +
+    '<div class="field"><label>Fecha de compra</label><input id="mFecha" type="date"></div>' +
+    '<button class="btn" onclick="saveCompra()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveCompra() {
+  const tarjeta = document.getElementById('mTarjeta').value;
+  const concepto = document.getElementById('mConcepto').value || 'Compra';
+  const monto = parseFloat(document.getElementById('mMonto').value) || 0;
+  const meses = parseInt(document.getElementById('mMeses').value) || 1;
+  const fecha = document.getElementById('mFecha').value || new Date().toISOString().slice(0,10);
+  db.tarjetas[tarjeta].compras.push({ concepto, monto, meses, fecha });
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function openGastoModal(tipo) {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Agregar gasto ' + (tipo === 'fijo' ? 'fijo' : 'variable') + '</h2>' +
+    '<div class="field"><label>Concepto</label><input id="gConcepto" placeholder="Ej. Renta, Super"></div>' +
+    '<div class="field"><label>Monto</label><input id="gMonto" type="number" placeholder="0.00"></div>' +
+    (tipo === 'fijo' ?
+      '<div class="field"><label>Frecuencia</label><select id="gFrecuencia"><option value="mensual">Mensual</option><option value="bimestral">Cada 2 meses</option></select></div>'
+      : '<div class="field"><label>Fecha</label><input id="gFecha" type="date"></div>') +
+    '<button class="btn" onclick="saveGasto(\'' + tipo + '\')">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveGasto(tipo) {
+  const concepto = document.getElementById('gConcepto').value || 'Gasto';
+  const monto = parseFloat(document.getElementById('gMonto').value) || 0;
+  if (tipo === 'fijo') {
+    const frecuencia = document.getElementById('gFrecuencia').value;
+    db.fijos.push({ id: Date.now(), nombre: concepto, monto, frecuencia, ultimoMes: currentDate.toISOString() });
+  } else {
+    const fecha = document.getElementById('gFecha').value || new Date().toISOString().slice(0,10);
+    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha)) });
+  }
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function openIngresoModal() {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Agregar ingreso</h2>' +
+    '<div class="field"><label>Concepto</label><select id="iConcepto">' +
+    '<option value="Nómina">Nómina (quincena)</option>' +
+    '<option value="Vales">Tarjeta de vales</option>' +
+    '<option value="Otro">Otro</option>' +
+    '</select></div>' +
+    '<div class="field"><label>Monto</label><input id="iMonto" type="number" placeholder="0.00"></div>' +
+    '<div class="field"><label>Fecha</label><input id="iFecha" type="date"></div>' +
+    '<button class="btn" onclick="saveIngreso()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveIngreso() {
+  const concepto = document.getElementById('iConcepto').value;
+  const monto = parseFloat(document.getElementById('iMonto').value) || 0;
+  const fecha = document.getElementById('iFecha').value || new Date().toISOString().slice(0,10);
+  db.ingresos.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha)) });
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function openConfigModal() {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Configuración</h2>' +
+    '<div class="field"><label>Sueldo mensual base</label><input id="cSueldo" type="number" value="' + db.config.sueldoMensual + '"></div>' +
+    '<div class="field"><label>Porcentaje de fondo de ahorro</label><input id="cAhorro" type="number" value="' + db.config.porcentajeAhorro + '"></div>' +
+    '<button class="btn" onclick="saveConfig()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveConfig() {
+  db.config.sueldoMensual = parseFloat(document.getElementById('cSueldo').value) || 36000;
+  db.config.porcentajeAhorro = parseFloat(document.getElementById('cAhorro').value) || 11;
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function quickAdd() {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>¿Qué quieres agregar?</h2>' +
+    '<button class="btn" onclick="closeModal();openCompraModal()">Compra a tarjeta (MSI)</button>' +
+    '<button class="btn" onclick="closeModal();openGastoModal(\'fijo\')">Gasto fijo</button>' +
+    '<button class="btn" onclick="closeModal();openGastoModal(\'variable\')">Gasto variable</button>' +
+    '<button class="btn" onclick="closeModal();openIngresoModal()">Ingreso</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+</script>
+</body>
+</html>

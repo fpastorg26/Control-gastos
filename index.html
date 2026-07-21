@@ -134,6 +134,7 @@
     padding: 20px;
     max-height: 85vh;
     overflow-y: auto;
+    position: relative;
   }
   .modal h2 { font-size: 16px; margin-bottom: 16px; }
   .field { margin-bottom: 12px; }
@@ -158,12 +159,11 @@
     color: #8888a8;
     font-size: 20px;
   }
-  .modal { position: relative; }
   .month-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   .month-nav button {
     background: #2a2a4e;
@@ -175,6 +175,28 @@
     font-size: 16px;
   }
   .month-nav .month-label { font-size: 15px; font-weight: 600; }
+  .view-toggle {
+    display: flex;
+    background: #16213e;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 16px;
+    border: 1px solid #2a2a3e;
+  }
+  .view-toggle button {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #8888a8;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .view-toggle button.active {
+    background: #4ecdc4;
+    color: #0f0f1a;
+    font-weight: 600;
+  }
   .badge {
     font-size: 10px;
     padding: 2px 8px;
@@ -183,7 +205,7 @@
   }
   .badge.urgent { background: #4a2020; color: #ff8888; }
   .badge.ok { background: #1a3a3a; color: #4ecdc4; }
-  .empty-state { text-align: center; padding: 30px 16px; color: #6868888; }
+  .empty-state { text-align: center; padding: 30px 16px; color: #6868a0; font-size: 13px; }
   .msi-item { background: #22223a; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 12px; }
   .login-screen {
     display: flex;
@@ -198,6 +220,14 @@
   .login-screen p { font-size: 13px; color: #8888a8; margin-bottom: 24px; }
   #g_id_signin_container { display: flex; justify-content: center; }
   .hidden { display: none !important; }
+  .retiro-item {
+    background: #2a1a1a;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 8px;
+    font-size: 12px;
+    border-left: 3px solid #ff6b6b;
+  }
 </style>
 </head>
 <body>
@@ -225,6 +255,7 @@
     <div class="tab" data-tab="fijos" onclick="switchTab('fijos')">Fijos</div>
     <div class="tab" data-tab="variables" onclick="switchTab('variables')">Variables</div>
     <div class="tab" data-tab="ingresos" onclick="switchTab('ingresos')">Ingresos</div>
+    <div class="tab" data-tab="ahorro" onclick="switchTab('ahorro')">Ahorro</div>
   </div>
 
   <div class="content">
@@ -234,14 +265,20 @@
       <button onclick="changeMonth(1)">›</button>
     </div>
 
+    <div class="view-toggle" id="viewToggle">
+      <button class="active" data-view="mensual" onclick="setViewMode('mensual')">Vista mensual</button>
+      <button data-view="q1" onclick="setViewMode('q1')">1ra quincena</button>
+      <button data-view="q2" onclick="setViewMode('q2')">2da quincena</button>
+    </div>
+
     <div id="tab-resumen" class="tab-content">
       <div class="summary-grid">
         <div class="summary-box">
-          <div class="label">Ingresos del mes</div>
+          <div class="label">Ingresos</div>
           <div class="value positive" id="sumIngresos">$0</div>
         </div>
         <div class="summary-box">
-          <div class="label">Gastos del mes</div>
+          <div class="label">Gastos</div>
           <div class="value negative" id="sumGastos">$0</div>
         </div>
         <div class="summary-box">
@@ -249,7 +286,7 @@
           <div class="value" id="sumBalance">$0</div>
         </div>
         <div class="summary-box">
-          <div class="label">Fondo de ahorro</div>
+          <div class="label">Fondo de ahorro (mes)</div>
           <div class="value positive" id="sumAhorro">$0</div>
         </div>
       </div>
@@ -284,6 +321,22 @@
       <div id="ingresosList"></div>
       <button class="btn" onclick="openIngresoModal()">+ Agregar ingreso</button>
     </div>
+
+    <div id="tab-ahorro" class="tab-content hidden">
+      <div class="card">
+        <h3>Fondo de ahorro acumulado</h3>
+        <div class="summary-box" style="margin-bottom:12px">
+          <div class="label">Acumulado a este mes (informativo)</div>
+          <div class="value positive" id="ahorroAcumulado">$0</div>
+        </div>
+        <div class="row-sub" id="ahorroDetalle" style="margin-bottom:8px"></div>
+      </div>
+      <div class="card">
+        <h3>Historial de retiros</h3>
+        <div id="retirosList"></div>
+      </div>
+      <button class="btn btn-secondary" onclick="openRetiroModal()">Registrar retiro del fondo</button>
+    </div>
   </div>
 </div>
 
@@ -303,25 +356,29 @@ let tokenClient;
 let accessToken = null;
 let driveFileId = null;
 let offlineMode = false;
+let viewMode = 'mensual';
 
 let currentDate = new Date(2026, 6, 1);
+
 let db = {
   tarjetas: {
     mercadoPago: { nombre: 'Mercado Pago', diaPago: 'ultimo', compras: [] },
     nu: { nombre: 'Nu', diaPago: 9, compras: [] },
     liverpool: { nombre: 'Liverpool', diaPago: 6, compras: [] },
     palacioHierro: { nombre: 'Palacio de Hierro', diaPago: 7, compras: [] },
-    bbva: { nombre: 'BBVA', diaPago: 12, compras: [] },
-    autoCredito: { nombre: 'Crédito del carro', diaPago: 'quincenal', compras: [] }
+    bbva: { nombre: 'BBVA', diaPago: 12, compras: [] }
   },
   fijos: [
-    { id: 'luz', nombre: 'Luz', monto: 0, frecuencia: 'bimestral', ultimoMes: null }
+    { id: 1, nombre: 'Luz', monto: 0, frecuencia: 'bimestral', diaPago: 15, inicio: null, fin: null },
+    { id: 2, nombre: 'Crédito del carro', monto: 0, frecuencia: 'mensual', diaPago: 'quincenal', inicio: null, fin: null }
   ],
   variables: [],
   ingresos: [],
+  retiros: [],
   config: {
     sueldoMensual: 36000,
-    porcentajeAhorro: 11
+    porcentajeAhorro: 11,
+    ahorroInicioMes: '2026-01'
   }
 };
 
@@ -336,7 +393,12 @@ function saveLocal() {
 function loadLocal() {
   const raw = localStorage.getItem('gastosDB');
   if (raw) {
-    try { db = JSON.parse(raw); } catch(e) {}
+    try {
+      const loaded = JSON.parse(raw);
+      db = Object.assign(db, loaded);
+      if (!db.retiros) db.retiros = [];
+      if (db.tarjetas && db.tarjetas.autoCredito) delete db.tarjetas.autoCredito;
+    } catch(e) {}
   }
 }
 
@@ -392,7 +454,8 @@ async function loadFromDrive() {
       headers: { Authorization: 'Bearer ' + accessToken }
     });
     const remote = await res.json();
-    db = remote;
+    db = Object.assign(db, remote);
+    if (!db.retiros) db.retiros = [];
     saveLocal();
   } else {
     await saveToDrive();
@@ -449,6 +512,14 @@ function switchTab(tab) {
   document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
   document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
   document.getElementById('tab-' + tab).classList.remove('hidden');
+  document.getElementById('viewToggle').style.display = (tab === 'resumen') ? 'flex' : 'none';
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-view="' + mode + '"]').classList.add('active');
+  renderResumen();
 }
 
 function changeMonth(delta) {
@@ -469,6 +540,7 @@ function renderAll() {
   renderFijos();
   renderVariables();
   renderIngresos();
+  renderAhorro();
 }
 
 function mesesTranscurridos(fechaCompra, fechaActual) {
@@ -489,18 +561,57 @@ function totalTarjetaMes(tarjetaKey, mesRef) {
   return total;
 }
 
+function diaPagoNumero(diaPago) {
+  if (diaPago === 'ultimo') return 31;
+  if (diaPago === 'quincenal') return null;
+  return Number(diaPago);
+}
+
+function quincenaDeDia(dia) {
+  return dia <= 15 ? 'q1' : 'q2';
+}
+
+function fijoAplicaEnMes(f, mesRef) {
+  if (f.inicio) {
+    const ini = new Date(f.inicio + '-01T00:00:00');
+    if (mesRef < new Date(ini.getFullYear(), ini.getMonth(), 1)) return false;
+  }
+  if (f.fin) {
+    const fin = new Date(f.fin + '-01T00:00:00');
+    if (mesRef > new Date(fin.getFullYear(), fin.getMonth(), 1)) return false;
+  }
+  if (f.frecuencia === 'bimestral') {
+    const base = f.inicio ? new Date(f.inicio + '-01T00:00:00') : mesRef;
+    const diff = mesesTranscurridos(base, mesRef);
+    return (diff % 2 === 0);
+  }
+  return true;
+}
+
+function filtroQuincena(diaPago) {
+  if (viewMode === 'mensual') return true;
+  if (diaPago === 'quincenal') return true;
+  const dn = diaPagoNumero(diaPago);
+  return quincenaDeDia(dn) === viewMode;
+}
+
 function renderResumen() {
   const mk = ymKey(currentDate);
   let totalIngresos = 0;
-  db.ingresos.filter(i => i.mes === mk).forEach(i => totalIngresos += Number(i.monto));
+  db.ingresos.filter(i => i.mes === mk).forEach(i => {
+    if (viewMode === 'mensual') { totalIngresos += Number(i.monto); return; }
+    const dia = new Date(i.fecha).getDate();
+    if (quincenaDeDia(dia) === viewMode) totalIngresos += Number(i.monto);
+  });
 
   let totalGastos = 0;
   let desgloseHtml = '';
 
   let totalTarjetas = 0;
   Object.keys(db.tarjetas).forEach(key => {
-    const t = totalTarjetaMes(key, currentDate);
-    totalTarjetas += t;
+    const t = db.tarjetas[key];
+    const monto = totalTarjetaMes(key, currentDate);
+    if (monto > 0 && filtroQuincena(t.diaPago)) totalTarjetas += monto;
   });
   if (totalTarjetas > 0) {
     desgloseHtml += '<div class="row"><span class="row-label">Tarjetas (mensualidades)</span><span class="row-amount negative">' + formatMoney(totalTarjetas) + '</span></div>';
@@ -509,13 +620,9 @@ function renderResumen() {
 
   let totalFijos = 0;
   db.fijos.forEach(f => {
-    let aplica = false;
-    if (f.frecuencia === 'mensual') aplica = true;
-    else if (f.frecuencia === 'bimestral') {
-      const mesesDesdeInicio = mesesTranscurridos(new Date(f.ultimoMes || currentDate), currentDate);
-      aplica = (mesesDesdeInicio % 2 === 0);
+    if (fijoAplicaEnMes(f, currentDate) && filtroQuincena(f.diaPago || 1)) {
+      totalFijos += Number(f.monto);
     }
-    if (aplica) totalFijos += Number(f.monto);
   });
   if (totalFijos > 0) {
     desgloseHtml += '<div class="row"><span class="row-label">Gastos fijos</span><span class="row-amount negative">' + formatMoney(totalFijos) + '</span></div>';
@@ -523,13 +630,17 @@ function renderResumen() {
   totalGastos += totalFijos;
 
   let totalVariables = 0;
-  db.variables.filter(v => v.mes === mk).forEach(v => totalVariables += Number(v.monto));
+  db.variables.filter(v => v.mes === mk).forEach(v => {
+    if (viewMode === 'mensual') { totalVariables += Number(v.monto); return; }
+    const dia = new Date(v.fecha).getDate();
+    if (quincenaDeDia(dia) === viewMode) totalVariables += Number(v.monto);
+  });
   if (totalVariables > 0) {
     desgloseHtml += '<div class="row"><span class="row-label">Gastos variables</span><span class="row-amount negative">' + formatMoney(totalVariables) + '</span></div>';
   }
   totalGastos += totalVariables;
 
-  if (!desgloseHtml) desgloseHtml = '<div class="empty-state">Sin gastos registrados este mes.</div>';
+  if (!desgloseHtml) desgloseHtml = '<div class="empty-state">Sin gastos registrados en este periodo.</div>';
 
   document.getElementById('sumIngresos').textContent = formatMoney(totalIngresos);
   document.getElementById('sumGastos').textContent = formatMoney(totalGastos);
@@ -538,8 +649,9 @@ function renderResumen() {
   balEl.textContent = formatMoney(balance);
   balEl.className = 'value ' + (balance >= 0 ? 'positive' : 'negative');
 
-  const ahorro = (db.config.sueldoMensual * db.config.porcentajeAhorro / 100);
-  document.getElementById('sumAhorro').textContent = formatMoney(ahorro);
+  const ahorroMes = (db.config.sueldoMensual * db.config.porcentajeAhorro / 100);
+  const ahorroMostrar = viewMode === 'mensual' ? ahorroMes : ahorroMes / 2;
+  document.getElementById('sumAhorro').textContent = formatMoney(ahorroMostrar);
 
   document.getElementById('desglose').innerHTML = desgloseHtml;
 
@@ -548,8 +660,7 @@ function renderResumen() {
     { nombre: 'Nu', dia: 'Antes del día 9' },
     { nombre: 'Liverpool', dia: 'Antes del día 6' },
     { nombre: 'Palacio de Hierro', dia: 'Antes del día 7' },
-    { nombre: 'BBVA', dia: 'Antes del día 12' },
-    { nombre: 'Crédito del carro', dia: 'Día 15 y último día' }
+    { nombre: 'BBVA', dia: 'Antes del día 12' }
   ];
   document.getElementById('proximosPagos').innerHTML = diasPago.map(p =>
     '<div class="row"><span class="row-label">' + p.nombre + '</span><span class="badge">' + p.dia + '</span></div>'
@@ -561,20 +672,22 @@ function renderTarjetas() {
   Object.keys(db.tarjetas).forEach(key => {
     const t = db.tarjetas[key];
     const totalMes = totalTarjetaMes(key, currentDate);
-    const comprasActivas = t.compras.filter(c => {
-      const idx = mesesTranscurridos(new Date(c.fecha), currentDate);
-      return idx >= 0 && idx < c.meses;
-    });
     html += '<div class="card">';
     html += '<h3>' + t.nombre + ' <span class="badge">' + formatMoney(totalMes) + '</span></h3>';
-    if (comprasActivas.length === 0) {
-      html += '<div class="empty-state">Sin compras activas este mes.</div>';
+    if (t.compras.length === 0) {
+      html += '<div class="empty-state">Sin compras registradas.</div>';
     } else {
-      comprasActivas.forEach(c => {
+      t.compras.forEach((c, i) => {
         const idx = mesesTranscurridos(new Date(c.fecha), currentDate);
-        html += '<div class="msi-item"><strong>' + c.concepto + '</strong><br>' +
-          'Mensualidad ' + (idx + 1) + '/' + c.meses + ' · ' + formatMoney(c.monto / c.meses) +
-          ' · Total: ' + formatMoney(c.monto) + '</div>';
+        const activaEsteMes = idx >= 0 && idx < c.meses;
+        const estadoTxt = idx < 0 ? 'Inicia ' + c.fecha : (idx >= c.meses ? 'Ya liquidada' : ('Mensualidad ' + (idx + 1) + '/' + c.meses));
+        html += '<div class="msi-item"><strong>' + c.concepto + '</strong>' + (activaEsteMes ? '' : ' <span class="badge">' + estadoTxt + '</span>') + '<br>' +
+          (activaEsteMes ? (estadoTxt + ' · ' + formatMoney(c.monto / c.meses) + ' · ') : '') +
+          'Total: ' + formatMoney(c.monto) +
+          '<div style="display:flex;gap:8px;margin-top:8px">' +
+          '<button class="btn btn-secondary" style="margin-top:0" onclick="editCompra(\'' + key + '\',' + i + ')">Editar</button>' +
+          '<button class="btn btn-danger" style="margin-top:0" onclick="deleteCompra(\'' + key + '\',' + i + ')">Eliminar</button>' +
+          '</div></div>';
       });
     }
     html += '</div>';
@@ -582,19 +695,85 @@ function renderTarjetas() {
   document.getElementById('tarjetasList').innerHTML = html;
 }
 
+function deleteCompra(tarjetaKey, i) {
+  const c = db.tarjetas[tarjetaKey].compras[i];
+  if (confirm('¿Eliminar por completo la compra "' + c.concepto + '" (' + formatMoney(c.monto) + ')? Esto la quita de todos los meses.')) {
+    db.tarjetas[tarjetaKey].compras.splice(i, 1);
+    persist();
+    renderAll();
+  }
+}
+
+function editCompra(tarjetaKey, i) {
+  const c = db.tarjetas[tarjetaKey].compras[i];
+  const options = Object.keys(db.tarjetas).map(k => '<option value="' + k + '"' + (k === tarjetaKey ? ' selected' : '') + '>' + db.tarjetas[k].nombre + '</option>').join('');
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Editar compra</h2>' +
+    '<div class="field"><label>Tarjeta</label><select id="mTarjeta">' + options + '</select></div>' +
+    '<div class="field"><label>Concepto</label><input id="mConcepto" value="' + c.concepto + '"></div>' +
+    '<div class="field-row">' +
+    '<div class="field"><label>Monto total</label><input id="mMonto" type="number" value="' + c.monto + '"></div>' +
+    '<div class="field"><label>Meses (MSI)</label><input id="mMeses" type="number" value="' + c.meses + '"></div>' +
+    '</div>' +
+    '<div class="field"><label>Fecha de compra</label><input id="mFecha" type="date" value="' + c.fecha + '"></div>' +
+    '<button class="btn" onclick="saveEditCompra(\'' + tarjetaKey + '\',' + i + ')">Guardar cambios</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveEditCompra(origenKey, i) {
+  const nuevaTarjeta = document.getElementById('mTarjeta').value;
+  const concepto = document.getElementById('mConcepto').value || 'Compra';
+  const monto = parseFloat(document.getElementById('mMonto').value) || 0;
+  const meses = parseInt(document.getElementById('mMeses').value) || 1;
+  const fecha = document.getElementById('mFecha').value;
+  db.tarjetas[origenKey].compras.splice(i, 1);
+  db.tarjetas[nuevaTarjeta].compras.push({ concepto, monto, meses, fecha });
+  persist();
+  closeModal();
+  renderAll();
+}
+
 function renderFijos() {
-  if (db.fijos.length === 0) {
-    document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos. Agrega uno.</div>';
+  const visibles = db.fijos
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => fijoAplicaEnMes(f, currentDate));
+
+  if (visibles.length === 0) {
+    document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos que apliquen este mes.</div>';
     return;
   }
   let html = '';
-  db.fijos.forEach((f, i) => {
+  visibles.forEach(({ f, i }) => {
+    let rango = '';
+    if (f.inicio || f.fin) {
+      rango = (f.inicio ? 'Desde ' + f.inicio : '') + (f.inicio && f.fin ? ' · ' : '') + (f.fin ? 'Hasta ' + f.fin : '');
+    }
     html += '<div class="card"><div class="row"><div><div class="row-label">' + f.nombre + '</div>' +
-      '<div class="row-sub">' + (f.frecuencia === 'bimestral' ? 'Cada 2 meses' : 'Mensual') + '</div></div>' +
+      '<div class="row-sub">' + (f.frecuencia === 'bimestral' ? 'Cada 2 meses' : 'Mensual') + (rango ? ' · ' + rango : '') + '</div></div>' +
       '<span class="row-amount negative">' + formatMoney(f.monto) + '</span></div>' +
-      '<button class="btn btn-danger" onclick="deleteFijo(' + i + ')">Eliminar</button></div>';
+      '<button class="btn btn-danger" onclick="confirmDeleteFijo(' + i + ')">Eliminar</button></div>';
   });
   document.getElementById('fijosList').innerHTML = html;
+}
+
+function confirmDeleteFijo(i) {
+  const f = db.fijos[i];
+  const mk = ymKey(currentDate);
+  const preguntar = confirm('¿Quieres que "' + f.nombre + '" deje de aparecer a partir de ' + MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear() + ' en adelante?\n\nAceptar = poner fecha de fin desde este mes.\nCancelar = eliminarlo por completo de todos los meses.');
+  if (preguntar) {
+    const mesAnterior = new Date(currentDate);
+    mesAnterior.setMonth(mesAnterior.getMonth() - 1);
+    f.fin = ymKey(mesAnterior);
+    persist();
+    renderAll();
+  } else {
+    if (confirm('¿Eliminar "' + f.nombre + '" por completo, de todos los meses (pasados y futuros)?')) {
+      db.fijos.splice(i, 1);
+      persist();
+      renderAll();
+    }
+  }
 }
 
 function renderVariables() {
@@ -631,6 +810,76 @@ function renderIngresos() {
       '<button class="btn btn-danger" onclick="deleteIngreso(' + i + ')">Eliminar</button></div>';
   });
   document.getElementById('ingresosList').innerHTML = html;
+}
+
+function mesKeyToIndex(mk) {
+  const [y, m] = mk.split('-').map(Number);
+  return y * 12 + (m - 1);
+}
+
+function renderAhorro() {
+  const aporteMensual = db.config.sueldoMensual * db.config.porcentajeAhorro / 100;
+  const mkActual = ymKey(currentDate);
+  const idxActual = mesKeyToIndex(mkActual);
+
+  let ultimoRetiro = null;
+  db.retiros.forEach(r => {
+    if (!ultimoRetiro || mesKeyToIndex(r.mes) > mesKeyToIndex(ultimoRetiro.mes)) {
+      if (mesKeyToIndex(r.mes) <= idxActual) ultimoRetiro = r;
+    }
+  });
+
+  let mesInicioConteo = db.config.ahorroInicioMes || mkActual;
+  if (ultimoRetiro) mesInicioConteo = ultimoRetiro.mes;
+
+  const idxInicio = mesKeyToIndex(mesInicioConteo);
+  const mesesAcumulados = Math.max(0, idxActual - idxInicio + (ultimoRetiro ? 0 : 1));
+  const acumulado = mesesAcumulados * aporteMensual;
+
+  document.getElementById('ahorroAcumulado').textContent = formatMoney(acumulado);
+  document.getElementById('ahorroDetalle').textContent = 'Aportación mensual: ' + formatMoney(aporteMensual) +
+    ' · Acumulando desde ' + mesInicioConteo + ' (' + mesesAcumulados + ' meses contados a este mes)';
+
+  if (db.retiros.length === 0) {
+    document.getElementById('retirosList').innerHTML = '<div class="empty-state">Sin retiros registrados.</div>';
+  } else {
+    let html = '';
+    db.retiros.slice().reverse().forEach((r) => {
+      const iOriginal = db.retiros.indexOf(r);
+      html += '<div class="retiro-item"><strong>' + formatMoney(r.monto) + '</strong> retirado en ' + r.mes +
+        (r.nota ? ' — ' + r.nota : '') +
+        '<br><button class="btn btn-danger" style="margin-top:6px" onclick="deleteRetiro(' + iOriginal + ')">Eliminar registro</button></div>';
+    });
+    document.getElementById('retirosList').innerHTML = html;
+  }
+}
+
+function deleteRetiro(i) {
+  db.retiros.splice(i, 1);
+  persist();
+  renderAll();
+}
+
+function openRetiroModal() {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Registrar retiro del fondo</h2>' +
+    '<p class="row-sub" style="margin-bottom:12px">A partir del mes que elijas, el acumulado informativo volverá a contarse desde cero.</p>' +
+    '<div class="field"><label>Monto retirado</label><input id="rMonto" type="number" placeholder="0.00"></div>' +
+    '<div class="field"><label>Mes del retiro</label><input id="rMes" type="month" value="' + ymKey(currentDate) + '"></div>' +
+    '<div class="field"><label>Nota (opcional)</label><input id="rNota" placeholder="Ej. Retiro para enganche"></div>' +
+    '<button class="btn" onclick="saveRetiro()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveRetiro() {
+  const monto = parseFloat(document.getElementById('rMonto').value) || 0;
+  const mes = document.getElementById('rMes').value || ymKey(currentDate);
+  const nota = document.getElementById('rNota').value || '';
+  db.retiros.push({ monto, mes, nota });
+  persist();
+  closeModal();
+  renderAll();
 }
 
 function deleteFijo(i) { db.fijos.splice(i, 1); persist(); renderAll(); }
@@ -676,7 +925,12 @@ function openGastoModal(tipo) {
     '<div class="field"><label>Concepto</label><input id="gConcepto" placeholder="Ej. Renta, Super"></div>' +
     '<div class="field"><label>Monto</label><input id="gMonto" type="number" placeholder="0.00"></div>' +
     (tipo === 'fijo' ?
-      '<div class="field"><label>Frecuencia</label><select id="gFrecuencia"><option value="mensual">Mensual</option><option value="bimestral">Cada 2 meses</option></select></div>'
+      '<div class="field"><label>Frecuencia</label><select id="gFrecuencia"><option value="mensual">Mensual</option><option value="bimestral">Cada 2 meses</option></select></div>' +
+      '<div class="field"><label>Día de pago (informativo)</label><input id="gDiaPago" placeholder="Ej. 15, o \'quincenal\'"></div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label>Fecha inicio (opcional)</label><input id="gInicio" type="month"></div>' +
+      '<div class="field"><label>Fecha fin (opcional)</label><input id="gFin" type="month"></div>' +
+      '</div>'
       : '<div class="field"><label>Fecha</label><input id="gFecha" type="date"></div>') +
     '<button class="btn" onclick="saveGasto(\'' + tipo + '\')">Guardar</button>';
   document.getElementById('modalOverlay').classList.add('open');
@@ -687,7 +941,10 @@ function saveGasto(tipo) {
   const monto = parseFloat(document.getElementById('gMonto').value) || 0;
   if (tipo === 'fijo') {
     const frecuencia = document.getElementById('gFrecuencia').value;
-    db.fijos.push({ id: Date.now(), nombre: concepto, monto, frecuencia, ultimoMes: currentDate.toISOString() });
+    const diaPago = document.getElementById('gDiaPago').value || '1';
+    const inicio = document.getElementById('gInicio').value || null;
+    const fin = document.getElementById('gFin').value || null;
+    db.fijos.push({ id: Date.now(), nombre: concepto, monto, frecuencia, diaPago, inicio, fin });
   } else {
     const fecha = document.getElementById('gFecha').value || new Date().toISOString().slice(0,10);
     db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha)) });
@@ -728,6 +985,7 @@ function openConfigModal() {
     '<h2>Configuración</h2>' +
     '<div class="field"><label>Sueldo mensual base</label><input id="cSueldo" type="number" value="' + db.config.sueldoMensual + '"></div>' +
     '<div class="field"><label>Porcentaje de fondo de ahorro</label><input id="cAhorro" type="number" value="' + db.config.porcentajeAhorro + '"></div>' +
+    '<div class="field"><label>Mes desde el que empezó a acumular (si nunca ha retirado)</label><input id="cInicioAhorro" type="month" value="' + (db.config.ahorroInicioMes || '') + '"></div>' +
     '<button class="btn" onclick="saveConfig()">Guardar</button>';
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -735,6 +993,7 @@ function openConfigModal() {
 function saveConfig() {
   db.config.sueldoMensual = parseFloat(document.getElementById('cSueldo').value) || 36000;
   db.config.porcentajeAhorro = parseFloat(document.getElementById('cAhorro').value) || 11;
+  db.config.ahorroInicioMes = document.getElementById('cInicioAhorro').value || db.config.ahorroInicioMes;
   persist();
   closeModal();
   renderAll();
@@ -747,7 +1006,8 @@ function quickAdd() {
     '<button class="btn" onclick="closeModal();openCompraModal()">Compra a tarjeta (MSI)</button>' +
     '<button class="btn" onclick="closeModal();openGastoModal(\'fijo\')">Gasto fijo</button>' +
     '<button class="btn" onclick="closeModal();openGastoModal(\'variable\')">Gasto variable</button>' +
-    '<button class="btn" onclick="closeModal();openIngresoModal()">Ingreso</button>';
+    '<button class="btn" onclick="closeModal();openIngresoModal()">Ingreso</button>' +
+    '<button class="btn" onclick="closeModal();openRetiroModal()">Retiro del fondo de ahorro</button>';
   document.getElementById('modalOverlay').classList.add('open');
 }
 </script>

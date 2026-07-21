@@ -24,44 +24,14 @@
     border-bottom: 1px solid #2a2a3e;
   }
   .header h1 { font-size: 18px; font-weight: 600; }
-  .sync-bar {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-    align-items: center;
-  }
-  .sync-bar button {
-    background: #2a2a4e;
-    color: #e8e8f0;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-  }
+  .sync-bar { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .sync-bar button { background: #2a2a4e; color: #e8e8f0; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; }
   .sync-status { font-size: 11px; color: #8888a8; margin-left: auto; }
-  .tabs {
-    display: flex;
-    overflow-x: auto;
-    background: #16213e;
-    border-bottom: 1px solid #2a2a3e;
-    -webkit-overflow-scrolling: touch;
-  }
-  .tab {
-    padding: 12px 16px;
-    font-size: 13px;
-    white-space: nowrap;
-    color: #8888a8;
-    border-bottom: 2px solid transparent;
-  }
+  .tabs { display: flex; overflow-x: auto; background: #16213e; border-bottom: 1px solid #2a2a3e; -webkit-overflow-scrolling: touch; }
+  .tab { padding: 12px 16px; font-size: 13px; white-space: nowrap; color: #8888a8; border-bottom: 2px solid transparent; }
   .tab.active { color: #4ecdc4; border-bottom-color: #4ecdc4; }
   .content { padding: 16px; }
-  .card {
-    background: #1a1a2e;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1px solid #2a2a3e;
-  }
+  .card { background: #1a1a2e; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #2a2a3e; }
   .card h3 { font-size: 14px; margin-bottom: 10px; color: #a8a8c8; font-weight: 500; }
   .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #22223a; }
   .row:last-child { border-bottom: none; }
@@ -71,163 +41,43 @@
   .positive { color: #4ecdc4; }
   .negative { color: #ff6b6b; }
   .warning { color: #ffd166; }
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .summary-box {
-    background: #1a1a2e;
-    border-radius: 12px;
-    padding: 14px;
-    border: 1px solid #2a2a3e;
-  }
+  .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .summary-box { background: #1a1a2e; border-radius: 12px; padding: 14px; border: 1px solid #2a2a3e; }
   .summary-box .label { font-size: 11px; color: #8888a8; margin-bottom: 4px; }
   .summary-box .value { font-size: 20px; font-weight: 700; }
-  .btn {
-    background: #4ecdc4;
-    color: #0f0f1a;
-    border: none;
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    width: 100%;
-    margin-top: 8px;
-  }
-  .btn-secondary {
-    background: #2a2a4e;
-    color: #e8e8f0;
-  }
-  .btn-danger {
-    background: #ff6b6b;
-    color: #1a1a1a;
-  }
-  .fab {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: #4ecdc4;
-    color: #0f0f1a;
-    font-size: 28px;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    z-index: 90;
-  }
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 200;
-    align-items: flex-end;
-  }
+  .btn { background: #4ecdc4; color: #0f0f1a; border: none; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; width: 100%; margin-top: 8px; }
+  .btn-secondary { background: #2a2a4e; color: #e8e8f0; }
+  .btn-danger { background: #ff6b6b; color: #1a1a1a; }
+  .fab { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #4ecdc4; color: #0f0f1a; font-size: 28px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 90; }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: flex-end; }
   .modal-overlay.open { display: flex; }
-  .modal {
-    background: #16213e;
-    width: 100%;
-    border-radius: 16px 16px 0 0;
-    padding: 20px;
-    max-height: 85vh;
-    overflow-y: auto;
-    position: relative;
-  }
+  .modal { background: #16213e; width: 100%; border-radius: 16px 16px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; position: relative; }
   .modal h2 { font-size: 16px; margin-bottom: 16px; }
   .field { margin-bottom: 12px; }
   .field label { display: block; font-size: 12px; color: #8888a8; margin-bottom: 6px; }
-  .field input, .field select {
-    width: 100%;
-    background: #1a1a2e;
-    border: 1px solid #2a2a4e;
-    color: #e8e8f0;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 14px;
-  }
+  .field input, .field select { width: 100%; background: #1a1a2e; border: 1px solid #2a2a4e; color: #e8e8f0; padding: 10px; border-radius: 8px; font-size: 14px; }
   .field-row { display: flex; gap: 8px; }
   .field-row .field { flex: 1; }
-  .close-modal {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: none;
-    border: none;
-    color: #8888a8;
-    font-size: 20px;
-  }
-  .month-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  .month-nav button {
-    background: #2a2a4e;
-    border: none;
-    color: #e8e8f0;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    font-size: 16px;
-  }
+  .close-modal { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #8888a8; font-size: 20px; }
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .month-nav button { background: #2a2a4e; border: none; color: #e8e8f0; width: 32px; height: 32px; border-radius: 8px; font-size: 16px; }
   .month-nav .month-label { font-size: 15px; font-weight: 600; }
-  .view-toggle {
-    display: flex;
-    background: #16213e;
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 16px;
-    border: 1px solid #2a2a3e;
-  }
-  .view-toggle button {
-    flex: 1;
-    background: none;
-    border: none;
-    color: #8888a8;
-    padding: 8px;
-    border-radius: 8px;
-    font-size: 13px;
-  }
-  .view-toggle button.active {
-    background: #4ecdc4;
-    color: #0f0f1a;
-    font-weight: 600;
-  }
-  .badge {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: #2a2a4e;
-  }
+  .view-toggle { display: flex; background: #16213e; border-radius: 10px; padding: 4px; margin-bottom: 16px; border: 1px solid #2a2a3e; }
+  .view-toggle button { flex: 1; background: none; border: none; color: #8888a8; padding: 8px; border-radius: 8px; font-size: 13px; }
+  .view-toggle button.active { background: #4ecdc4; color: #0f0f1a; font-weight: 600; }
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #2a2a4e; }
   .badge.urgent { background: #4a2020; color: #ff8888; }
   .badge.ok { background: #1a3a3a; color: #4ecdc4; }
   .empty-state { text-align: center; padding: 30px 16px; color: #6868a0; font-size: 13px; }
   .msi-item { background: #22223a; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 12px; }
-  .login-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    padding: 24px;
-    text-align: center;
-  }
+  .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 24px; text-align: center; }
   .login-screen h1 { font-size: 22px; margin-bottom: 8px; }
   .login-screen p { font-size: 13px; color: #8888a8; margin-bottom: 24px; }
   #g_id_signin_container { display: flex; justify-content: center; }
   .hidden { display: none !important; }
-  .retiro-item {
-    background: #2a1a1a;
-    border-radius: 8px;
-    padding: 10px;
-    margin-top: 8px;
-    font-size: 12px;
-    border-left: 3px solid #ff6b6b;
-  }
+  .retiro-item { background: #2a1a1a; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 12px; border-left: 3px solid #ff6b6b; }
+  .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-row .btn { margin-top: 0; }
 </style>
 </head>
 <body>
@@ -273,48 +123,26 @@
 
     <div id="tab-resumen" class="tab-content">
       <div class="summary-grid">
-        <div class="summary-box">
-          <div class="label">Ingresos</div>
-          <div class="value positive" id="sumIngresos">$0</div>
-        </div>
-        <div class="summary-box">
-          <div class="label">Gastos</div>
-          <div class="value negative" id="sumGastos">$0</div>
-        </div>
-        <div class="summary-box">
-          <div class="label">Balance real</div>
-          <div class="value" id="sumBalance">$0</div>
-        </div>
-        <div class="summary-box">
-          <div class="label">Fondo de ahorro (mes)</div>
-          <div class="value positive" id="sumAhorro">$0</div>
-        </div>
+        <div class="summary-box"><div class="label">Ingresos</div><div class="value positive" id="sumIngresos">$0</div></div>
+        <div class="summary-box"><div class="label">Gastos</div><div class="value negative" id="sumGastos">$0</div></div>
+        <div class="summary-box"><div class="label">Balance real</div><div class="value" id="sumBalance">$0</div></div>
+        <div class="summary-box"><div class="label">Fondo de ahorro (mes)</div><div class="value positive" id="sumAhorro">$0</div></div>
       </div>
-
-      <div class="card">
-        <h3>Próximos pagos de tarjetas</h3>
-        <div id="proximosPagos"></div>
-      </div>
-
-      <div class="card">
-        <h3>Desglose de gastos</h3>
-        <div id="desglose"></div>
-      </div>
+      <div class="card"><h3>Cortes y pagos de tarjetas</h3><div id="proximosPagos"></div></div>
+      <div class="card"><h3>Desglose de gastos</h3><div id="desglose"></div></div>
     </div>
 
     <div id="tab-tarjetas" class="tab-content hidden">
       <div id="tarjetasList"></div>
-      <button class="btn" onclick="openCompraModal()">+ Agregar compra a tarjeta</button>
     </div>
 
     <div id="tab-fijos" class="tab-content hidden">
       <div id="fijosList"></div>
-      <button class="btn" onclick="openGastoModal('fijo')">+ Agregar gasto fijo</button>
+      <button class="btn" onclick="openGastoFijoModal()">+ Agregar gasto fijo</button>
     </div>
 
     <div id="tab-variables" class="tab-content hidden">
       <div id="variablesList"></div>
-      <button class="btn" onclick="openGastoModal('variable')">+ Agregar gasto variable</button>
     </div>
 
     <div id="tab-ingresos" class="tab-content hidden">
@@ -331,16 +159,13 @@
         </div>
         <div class="row-sub" id="ahorroDetalle" style="margin-bottom:8px"></div>
       </div>
-      <div class="card">
-        <h3>Historial de retiros</h3>
-        <div id="retirosList"></div>
-      </div>
+      <div class="card"><h3>Historial de retiros</h3><div id="retirosList"></div></div>
       <button class="btn btn-secondary" onclick="openRetiroModal()">Registrar retiro del fondo</button>
     </div>
   </div>
 </div>
 
-<button class="fab hidden" id="fabBtn" onclick="quickAdd()">+</button>
+<button class="fab hidden" id="fabBtn" onclick="openGastoModal()">+</button>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modalContent"></div>
@@ -357,16 +182,15 @@ let accessToken = null;
 let driveFileId = null;
 let offlineMode = false;
 let viewMode = 'mensual';
-
 let currentDate = new Date(2026, 6, 1);
 
 let db = {
   tarjetas: {
-    mercadoPago: { nombre: 'Mercado Pago', diaPago: 'ultimo', compras: [] },
-    nu: { nombre: 'Nu', diaPago: 9, compras: [] },
-    liverpool: { nombre: 'Liverpool', diaPago: 6, compras: [] },
-    palacioHierro: { nombre: 'Palacio de Hierro', diaPago: 7, compras: [] },
-    bbva: { nombre: 'BBVA', diaPago: 12, compras: [] }
+    mercadoPago: { nombre: 'Mercado Pago', diaCorte: 21, diaLimitePago: 30, compras: [] },
+    nu: { nombre: 'Nu', diaCorte: 30, diaLimitePago: 9, compras: [] },
+    liverpool: { nombre: 'Liverpool', diaCorte: 7, diaLimitePago: 6, compras: [] },
+    palacioHierro: { nombre: 'Palacio de Hierro', diaCorte: 7, diaLimitePago: 7, compras: [] },
+    bbva: { nombre: 'BBVA', diaCorte: 23, diaLimitePago: 12, compras: [] }
   },
   fijos: [
     { id: 1, nombre: 'Luz', monto: 0, frecuencia: 'bimestral', diaPago: 15, inicio: null, fin: null },
@@ -375,20 +199,11 @@ let db = {
   variables: [],
   ingresos: [],
   retiros: [],
-  config: {
-    sueldoMensual: 36000,
-    porcentajeAhorro: 11,
-    ahorroInicioMes: '2026-01'
-  }
+  config: { sueldoMensual: 36000, porcentajeAhorro: 11, ahorroInicioMes: '2026-01' }
 };
 
-function ymKey(date) {
-  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
-}
-
-function saveLocal() {
-  localStorage.setItem('gastosDB', JSON.stringify(db));
-}
+function ymKey(date) { return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0'); }
+function saveLocal() { localStorage.setItem('gastosDB', JSON.stringify(db)); }
 
 function loadLocal() {
   const raw = localStorage.getItem('gastosDB');
@@ -398,15 +213,19 @@ function loadLocal() {
       db = Object.assign(db, loaded);
       if (!db.retiros) db.retiros = [];
       if (db.tarjetas && db.tarjetas.autoCredito) delete db.tarjetas.autoCredito;
+      Object.keys(db.tarjetas).forEach(k => {
+        const t = db.tarjetas[k];
+        if (t.diaCorte === undefined) t.diaCorte = 1;
+        if (t.diaLimitePago === undefined) t.diaLimitePago = t.diaPago === 'ultimo' ? 30 : (Number(t.diaPago) || 10);
+        (t.compras || []).forEach(c => { if (c.metodoTexto === undefined) c.metodoTexto = null; });
+      });
     } catch(e) {}
   }
 }
 
 window.onload = function() {
   loadLocal();
-  if (localStorage.getItem('offlineChoice') === 'true') {
-    continueOffline();
-  }
+  if (localStorage.getItem('offlineChoice') === 'true') { continueOffline(); }
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
@@ -424,9 +243,7 @@ window.onload = function() {
     '<button class="btn" style="max-width:280px" onclick="signIn()">Iniciar sesión con Google</button>';
 };
 
-function signIn() {
-  tokenClient.requestAccessToken();
-}
+function signIn() { tokenClient.requestAccessToken(); }
 
 function continueOffline() {
   offlineMode = true;
@@ -439,9 +256,7 @@ function continueOffline() {
 }
 
 async function driveFind() {
-  const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' + FILE_NAME + '%27', {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  });
+  const res = await fetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' + FILE_NAME + '%27', { headers: { Authorization: 'Bearer ' + accessToken } });
   const data = await res.json();
   return (data.files && data.files.length) ? data.files[0].id : null;
 }
@@ -450,9 +265,7 @@ async function loadFromDrive() {
   document.getElementById('syncStatus').textContent = 'Cargando...';
   driveFileId = await driveFind();
   if (driveFileId) {
-    const res = await fetch('https://www.googleapis.com/drive/v3/files/' + driveFileId + '?alt=media', {
-      headers: { Authorization: 'Bearer ' + accessToken }
-    });
+    const res = await fetch('https://www.googleapis.com/drive/v3/files/' + driveFileId + '?alt=media', { headers: { Authorization: 'Bearer ' + accessToken } });
     const remote = await res.json();
     db = Object.assign(db, remote);
     if (!db.retiros) db.retiros = [];
@@ -469,21 +282,14 @@ async function saveToDrive() {
   document.getElementById('syncStatus').textContent = 'Guardando...';
   const metadata = { name: FILE_NAME, parents: driveFileId ? undefined : ['appDataFolder'] };
   const boundary = 'boundary_gastos_app';
-  const body =
-    '--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(metadata) +
-    '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(db) +
-    '\r\n--' + boundary + '--';
-
+  const body = '--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(metadata) +
+    '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(db) + '\r\n--' + boundary + '--';
   const url = driveFileId
     ? 'https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=multipart'
     : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-
   const res = await fetch(url, {
     method: driveFileId ? 'PATCH' : 'POST',
-    headers: {
-      Authorization: 'Bearer ' + accessToken,
-      'Content-Type': 'multipart/related; boundary=' + boundary
-    },
+    headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'multipart/related; boundary=' + boundary },
     body: body
   });
   const data = await res.json();
@@ -493,19 +299,12 @@ async function saveToDrive() {
 
 function syncNow() {
   saveLocal();
-  if (accessToken) {
-    saveToDrive();
-  } else if (!offlineMode) {
-    signIn();
-  } else {
-    document.getElementById('syncStatus').textContent = 'Modo local (sin sincronizar)';
-  }
+  if (accessToken) { saveToDrive(); }
+  else if (!offlineMode) { signIn(); }
+  else { document.getElementById('syncStatus').textContent = 'Modo local (sin sincronizar)'; }
 }
 
-function persist() {
-  saveLocal();
-  if (accessToken) saveToDrive();
-}
+function persist() { saveLocal(); if (accessToken) saveToDrive(); }
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -522,15 +321,8 @@ function setViewMode(mode) {
   renderResumen();
 }
 
-function changeMonth(delta) {
-  currentDate.setMonth(currentDate.getMonth() + delta);
-  renderAll();
-}
-
-function formatMoney(n) {
-  return '$' + Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
+function changeMonth(delta) { currentDate.setMonth(currentDate.getMonth() + delta); renderAll(); }
+function formatMoney(n) { return '$' + Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 function renderAll() {
@@ -547,29 +339,41 @@ function mesesTranscurridos(fechaCompra, fechaActual) {
   return (fechaActual.getFullYear() - fechaCompra.getFullYear()) * 12 + (fechaActual.getMonth() - fechaCompra.getMonth());
 }
 
-function mensualidadCompra(compra, mesRef) {
-  const fc = new Date(compra.fecha);
-  const idx = mesesTranscurridos(fc, mesRef);
-  if (idx < 0 || idx >= compra.meses) return 0;
-  return compra.monto / compra.meses;
+/* --- Lógica de corte/pago de tarjetas ---
+   Si el día de la compra es MENOR al día de corte -> cae dentro del corte de ESE mismo mes.
+   Si es MAYOR O IGUAL al día de corte -> cae en el corte del mes SIGUIENTE.
+   El mes de PAGO de ese corte es: el mes del corte, o el mes siguiente si diaLimitePago < diaCorte (el pago cae ya en el mes de después). */
+function mesDeCortePorCompra(tarjeta, fechaCompraStr) {
+  const fc = new Date(fechaCompraStr + 'T00:00:00');
+  const dia = fc.getDate();
+  let mesCorte = new Date(fc.getFullYear(), fc.getMonth(), 1);
+  if (dia >= tarjeta.diaCorte) {
+    mesCorte = new Date(fc.getFullYear(), fc.getMonth() + 1, 1);
+  }
+  return mesCorte;
 }
 
-function totalTarjetaMes(tarjetaKey, mesRef) {
+function mesDePagoDelCorte(tarjeta, mesCorte) {
+  return new Date(mesCorte.getFullYear(), mesCorte.getMonth() + 1, 1);
+}
+
+function mensualidadCompraEnMesPago(tarjeta, compra, mesRefPago) {
+  const mesCorteCompra = mesDeCortePorCompra(tarjeta, compra.fecha);
+  const mesPagoCompra = mesDePagoDelCorte(tarjeta, mesCorteCompra);
+  const idx = mesesTranscurridos(mesPagoCompra, mesRefPago);
+  const meses = compra.meses || 1;
+  if (idx < 0 || idx >= meses) return 0;
+  return compra.monto / meses;
+}
+
+function totalTarjetaMesPago(tarjetaKey, mesRefPago) {
   const t = db.tarjetas[tarjetaKey];
   let total = 0;
-  t.compras.forEach(c => { total += mensualidadCompra(c, mesRef); });
+  t.compras.forEach(c => { total += mensualidadCompraEnMesPago(t, c, mesRefPago); });
   return total;
 }
 
-function diaPagoNumero(diaPago) {
-  if (diaPago === 'ultimo') return 31;
-  if (diaPago === 'quincenal') return null;
-  return Number(diaPago);
-}
-
-function quincenaDeDia(dia) {
-  return dia <= 15 ? 'q1' : 'q2';
-}
+function quincenaDeDia(dia) { return dia <= 15 ? 'q1' : 'q2'; }
 
 function fijoAplicaEnMes(f, mesRef) {
   if (f.inicio) {
@@ -588,11 +392,10 @@ function fijoAplicaEnMes(f, mesRef) {
   return true;
 }
 
-function filtroQuincena(diaPago) {
+function filtroQuincenaDia(dia) {
   if (viewMode === 'mensual') return true;
-  if (diaPago === 'quincenal') return true;
-  const dn = diaPagoNumero(diaPago);
-  return quincenaDeDia(dn) === viewMode;
+  if (dia === 'quincenal' || dia === null || dia === undefined) return true;
+  return quincenaDeDia(Number(dia)) === viewMode;
 }
 
 function renderResumen() {
@@ -610,23 +413,15 @@ function renderResumen() {
   let totalTarjetas = 0;
   Object.keys(db.tarjetas).forEach(key => {
     const t = db.tarjetas[key];
-    const monto = totalTarjetaMes(key, currentDate);
-    if (monto > 0 && filtroQuincena(t.diaPago)) totalTarjetas += monto;
+    const monto = totalTarjetaMesPago(key, currentDate);
+    if (monto > 0 && filtroQuincenaDia(t.diaLimitePago)) totalTarjetas += monto;
   });
-  if (totalTarjetas > 0) {
-    desgloseHtml += '<div class="row"><span class="row-label">Tarjetas (mensualidades)</span><span class="row-amount negative">' + formatMoney(totalTarjetas) + '</span></div>';
-  }
+  if (totalTarjetas > 0) desgloseHtml += '<div class="row"><span class="row-label">Tarjetas (pagos del mes)</span><span class="row-amount negative">' + formatMoney(totalTarjetas) + '</span></div>';
   totalGastos += totalTarjetas;
 
   let totalFijos = 0;
-  db.fijos.forEach(f => {
-    if (fijoAplicaEnMes(f, currentDate) && filtroQuincena(f.diaPago || 1)) {
-      totalFijos += Number(f.monto);
-    }
-  });
-  if (totalFijos > 0) {
-    desgloseHtml += '<div class="row"><span class="row-label">Gastos fijos</span><span class="row-amount negative">' + formatMoney(totalFijos) + '</span></div>';
-  }
+  db.fijos.forEach(f => { if (fijoAplicaEnMes(f, currentDate) && filtroQuincenaDia(f.diaPago || 1)) totalFijos += Number(f.monto); });
+  if (totalFijos > 0) desgloseHtml += '<div class="row"><span class="row-label">Gastos fijos</span><span class="row-amount negative">' + formatMoney(totalFijos) + '</span></div>';
   totalGastos += totalFijos;
 
   let totalVariables = 0;
@@ -635,9 +430,7 @@ function renderResumen() {
     const dia = new Date(v.fecha).getDate();
     if (quincenaDeDia(dia) === viewMode) totalVariables += Number(v.monto);
   });
-  if (totalVariables > 0) {
-    desgloseHtml += '<div class="row"><span class="row-label">Gastos variables</span><span class="row-amount negative">' + formatMoney(totalVariables) + '</span></div>';
-  }
+  if (totalVariables > 0) desgloseHtml += '<div class="row"><span class="row-label">Gastos en efectivo/débito</span><span class="row-amount negative">' + formatMoney(totalVariables) + '</span></div>';
   totalGastos += totalVariables;
 
   if (!desgloseHtml) desgloseHtml = '<div class="empty-state">Sin gastos registrados en este periodo.</div>';
@@ -650,49 +443,68 @@ function renderResumen() {
   balEl.className = 'value ' + (balance >= 0 ? 'positive' : 'negative');
 
   const ahorroMes = (db.config.sueldoMensual * db.config.porcentajeAhorro / 100);
-  const ahorroMostrar = viewMode === 'mensual' ? ahorroMes : ahorroMes / 2;
-  document.getElementById('sumAhorro').textContent = formatMoney(ahorroMostrar);
-
+  document.getElementById('sumAhorro').textContent = formatMoney(viewMode === 'mensual' ? ahorroMes : ahorroMes / 2);
   document.getElementById('desglose').innerHTML = desgloseHtml;
 
-  const diasPago = [
-    { nombre: 'Mercado Pago', dia: 'Último día del mes' },
-    { nombre: 'Nu', dia: 'Antes del día 9' },
-    { nombre: 'Liverpool', dia: 'Antes del día 6' },
-    { nombre: 'Palacio de Hierro', dia: 'Antes del día 7' },
-    { nombre: 'BBVA', dia: 'Antes del día 12' }
-  ];
-  document.getElementById('proximosPagos').innerHTML = diasPago.map(p =>
-    '<div class="row"><span class="row-label">' + p.nombre + '</span><span class="badge">' + p.dia + '</span></div>'
-  ).join('');
+  let cortesHtml = '';
+  Object.keys(db.tarjetas).forEach(key => {
+    const t = db.tarjetas[key];
+    cortesHtml += '<div class="row"><span class="row-label">' + t.nombre + '</span><span class="badge">Corte día ' + t.diaCorte + ' · Pago antes del ' + t.diaLimitePago + '</span></div>';
+  });
+  document.getElementById('proximosPagos').innerHTML = cortesHtml;
 }
 
 function renderTarjetas() {
   let html = '';
   Object.keys(db.tarjetas).forEach(key => {
     const t = db.tarjetas[key];
-    const totalMes = totalTarjetaMes(key, currentDate);
+    const totalMesPago = totalTarjetaMesPago(key, currentDate);
     html += '<div class="card">';
-    html += '<h3>' + t.nombre + ' <span class="badge">' + formatMoney(totalMes) + '</span></h3>';
+    html += '<h3>' + t.nombre + ' <span class="badge">' + formatMoney(totalMesPago) + ' este mes</span></h3>';
+    html += '<div class="row-sub" style="margin-bottom:8px">Corte: día ' + t.diaCorte + ' · Pago límite: día ' + t.diaLimitePago + '</div>';
+    html += '<button class="btn btn-secondary" style="margin-top:0;margin-bottom:8px" onclick="editTarjetaFechas(\'' + key + '\')">Editar fechas de corte/pago</button>';
     if (t.compras.length === 0) {
       html += '<div class="empty-state">Sin compras registradas.</div>';
     } else {
       t.compras.forEach((c, i) => {
-        const idx = mesesTranscurridos(new Date(c.fecha), currentDate);
-        const activaEsteMes = idx >= 0 && idx < c.meses;
-        const estadoTxt = idx < 0 ? 'Inicia ' + c.fecha : (idx >= c.meses ? 'Ya liquidada' : ('Mensualidad ' + (idx + 1) + '/' + c.meses));
+        const mesCorte = mesDeCortePorCompra(t, c.fecha);
+        const mesPago = mesDePagoDelCorte(t, mesCorte);
+        const idx = mesesTranscurridos(mesPago, currentDate);
+        const meses = c.meses || 1;
+        const activaEsteMes = idx >= 0 && idx < meses;
+        const estadoTxt = idx < 0 ? ('Se paga desde ' + MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear()) : (idx >= meses ? 'Ya liquidada' : ('Pago ' + (idx + 1) + '/' + meses));
         html += '<div class="msi-item"><strong>' + c.concepto + '</strong>' + (activaEsteMes ? '' : ' <span class="badge">' + estadoTxt + '</span>') + '<br>' +
-          (activaEsteMes ? (estadoTxt + ' · ' + formatMoney(c.monto / c.meses) + ' · ') : '') +
+          (activaEsteMes ? (estadoTxt + ' · ' + formatMoney(c.monto / meses) + ' · ') : '') +
           'Total: ' + formatMoney(c.monto) +
-          '<div style="display:flex;gap:8px;margin-top:8px">' +
-          '<button class="btn btn-secondary" style="margin-top:0" onclick="editCompra(\'' + key + '\',' + i + ')">Editar</button>' +
-          '<button class="btn btn-danger" style="margin-top:0" onclick="deleteCompra(\'' + key + '\',' + i + ')">Eliminar</button>' +
+          '<div class="btn-row">' +
+          '<button class="btn btn-secondary" onclick="editCompra(\'' + key + '\',' + i + ')">Editar</button>' +
+          '<button class="btn btn-danger" onclick="deleteCompra(\'' + key + '\',' + i + ')">Eliminar</button>' +
           '</div></div>';
       });
     }
     html += '</div>';
   });
   document.getElementById('tarjetasList').innerHTML = html;
+}
+
+function editTarjetaFechas(key) {
+  const t = db.tarjetas[key];
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>' + t.nombre + ' — fechas</h2>' +
+    '<div class="field"><label>Día de corte (1-31)</label><input id="tCorte" type="number" min="1" max="31" value="' + t.diaCorte + '"></div>' +
+    '<div class="field"><label>Día límite de pago (1-31)</label><input id="tPago" type="number" min="1" max="31" value="' + t.diaLimitePago + '"></div>' +
+    '<p class="row-sub" style="margin-bottom:8px">Si compras el día de corte o después, la compra se recorre al siguiente ciclo.</p>' +
+    '<button class="btn" onclick="saveTarjetaFechas(\'' + key + '\')">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveTarjetaFechas(key) {
+  db.tarjetas[key].diaCorte = parseInt(document.getElementById('tCorte').value) || 1;
+  db.tarjetas[key].diaLimitePago = parseInt(document.getElementById('tPago').value) || 1;
+  persist();
+  closeModal();
+  renderAll();
 }
 
 function deleteCompra(tarjetaKey, i) {
@@ -714,7 +526,7 @@ function editCompra(tarjetaKey, i) {
     '<div class="field"><label>Concepto</label><input id="mConcepto" value="' + c.concepto + '"></div>' +
     '<div class="field-row">' +
     '<div class="field"><label>Monto total</label><input id="mMonto" type="number" value="' + c.monto + '"></div>' +
-    '<div class="field"><label>Meses (MSI)</label><input id="mMeses" type="number" value="' + c.meses + '"></div>' +
+    '<div class="field"><label>Meses (1 = pago único)</label><input id="mMeses" type="number" value="' + (c.meses || 1) + '"></div>' +
     '</div>' +
     '<div class="field"><label>Fecha de compra</label><input id="mFecha" type="date" value="' + c.fecha + '"></div>' +
     '<button class="btn" onclick="saveEditCompra(\'' + tarjetaKey + '\',' + i + ')">Guardar cambios</button>';
@@ -735,10 +547,7 @@ function saveEditCompra(origenKey, i) {
 }
 
 function renderFijos() {
-  const visibles = db.fijos
-    .map((f, i) => ({ f, i }))
-    .filter(({ f }) => fijoAplicaEnMes(f, currentDate));
-
+  const visibles = db.fijos.map((f, i) => ({ f, i })).filter(({ f }) => fijoAplicaEnMes(f, currentDate));
   if (visibles.length === 0) {
     document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos que apliquen este mes.</div>';
     return;
@@ -746,9 +555,7 @@ function renderFijos() {
   let html = '';
   visibles.forEach(({ f, i }) => {
     let rango = '';
-    if (f.inicio || f.fin) {
-      rango = (f.inicio ? 'Desde ' + f.inicio : '') + (f.inicio && f.fin ? ' · ' : '') + (f.fin ? 'Hasta ' + f.fin : '');
-    }
+    if (f.inicio || f.fin) rango = (f.inicio ? 'Desde ' + f.inicio : '') + (f.inicio && f.fin ? ' · ' : '') + (f.fin ? 'Hasta ' + f.fin : '');
     html += '<div class="card"><div class="row"><div><div class="row-label">' + f.nombre + '</div>' +
       '<div class="row-sub">' + (f.frecuencia === 'bimestral' ? 'Cada 2 meses' : 'Mensual') + (rango ? ' · ' + rango : '') + '</div></div>' +
       '<span class="row-amount negative">' + formatMoney(f.monto) + '</span></div>' +
@@ -759,20 +566,17 @@ function renderFijos() {
 
 function confirmDeleteFijo(i) {
   const f = db.fijos[i];
-  const mk = ymKey(currentDate);
-  const preguntar = confirm('¿Quieres que "' + f.nombre + '" deje de aparecer a partir de ' + MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear() + ' en adelante?\n\nAceptar = poner fecha de fin desde este mes.\nCancelar = eliminarlo por completo de todos los meses.');
+  const preguntar = confirm('¿Quieres que "' + f.nombre + '" deje de aparecer a partir de ' + MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear() + ' en adelante?\n\nAceptar = poner fecha de fin desde el mes anterior a este.\nCancelar = eliminarlo por completo de todos los meses.');
   if (preguntar) {
     const mesAnterior = new Date(currentDate);
     mesAnterior.setMonth(mesAnterior.getMonth() - 1);
     f.fin = ymKey(mesAnterior);
     persist();
     renderAll();
-  } else {
-    if (confirm('¿Eliminar "' + f.nombre + '" por completo, de todos los meses (pasados y futuros)?')) {
-      db.fijos.splice(i, 1);
-      persist();
-      renderAll();
-    }
+  } else if (confirm('¿Eliminar "' + f.nombre + '" por completo, de todos los meses (pasados y futuros)?')) {
+    db.fijos.splice(i, 1);
+    persist();
+    renderAll();
   }
 }
 
@@ -780,7 +584,7 @@ function renderVariables() {
   const mk = ymKey(currentDate);
   const items = db.variables.filter(v => v.mes === mk);
   if (items.length === 0) {
-    document.getElementById('variablesList').innerHTML = '<div class="empty-state">Sin gastos variables este mes.</div>';
+    document.getElementById('variablesList').innerHTML = '<div class="empty-state">Sin gastos en efectivo/débito este mes.</div>';
     return;
   }
   let html = '';
@@ -812,53 +616,39 @@ function renderIngresos() {
   document.getElementById('ingresosList').innerHTML = html;
 }
 
-function mesKeyToIndex(mk) {
-  const [y, m] = mk.split('-').map(Number);
-  return y * 12 + (m - 1);
-}
+function mesKeyToIndex(mk) { const [y, m] = mk.split('-').map(Number); return y * 12 + (m - 1); }
 
 function renderAhorro() {
   const aporteMensual = db.config.sueldoMensual * db.config.porcentajeAhorro / 100;
   const mkActual = ymKey(currentDate);
   const idxActual = mesKeyToIndex(mkActual);
-
   let ultimoRetiro = null;
   db.retiros.forEach(r => {
     if (!ultimoRetiro || mesKeyToIndex(r.mes) > mesKeyToIndex(ultimoRetiro.mes)) {
       if (mesKeyToIndex(r.mes) <= idxActual) ultimoRetiro = r;
     }
   });
-
   let mesInicioConteo = db.config.ahorroInicioMes || mkActual;
   if (ultimoRetiro) mesInicioConteo = ultimoRetiro.mes;
-
   const idxInicio = mesKeyToIndex(mesInicioConteo);
   const mesesAcumulados = Math.max(0, idxActual - idxInicio + (ultimoRetiro ? 0 : 1));
   const acumulado = mesesAcumulados * aporteMensual;
-
   document.getElementById('ahorroAcumulado').textContent = formatMoney(acumulado);
-  document.getElementById('ahorroDetalle').textContent = 'Aportación mensual: ' + formatMoney(aporteMensual) +
-    ' · Acumulando desde ' + mesInicioConteo + ' (' + mesesAcumulados + ' meses contados a este mes)';
-
+  document.getElementById('ahorroDetalle').textContent = 'Aportación mensual: ' + formatMoney(aporteMensual) + ' · Acumulando desde ' + mesInicioConteo + ' (' + mesesAcumulados + ' meses contados a este mes)';
   if (db.retiros.length === 0) {
     document.getElementById('retirosList').innerHTML = '<div class="empty-state">Sin retiros registrados.</div>';
   } else {
     let html = '';
     db.retiros.slice().reverse().forEach((r) => {
       const iOriginal = db.retiros.indexOf(r);
-      html += '<div class="retiro-item"><strong>' + formatMoney(r.monto) + '</strong> retirado en ' + r.mes +
-        (r.nota ? ' — ' + r.nota : '') +
+      html += '<div class="retiro-item"><strong>' + formatMoney(r.monto) + '</strong> retirado en ' + r.mes + (r.nota ? ' — ' + r.nota : '') +
         '<br><button class="btn btn-danger" style="margin-top:6px" onclick="deleteRetiro(' + iOriginal + ')">Eliminar registro</button></div>';
     });
     document.getElementById('retirosList').innerHTML = html;
   }
 }
 
-function deleteRetiro(i) {
-  db.retiros.splice(i, 1);
-  persist();
-  renderAll();
-}
+function deleteRetiro(i) { db.retiros.splice(i, 1); persist(); renderAll(); }
 
 function openRetiroModal() {
   document.getElementById('modalContent').innerHTML =
@@ -882,73 +672,88 @@ function saveRetiro() {
   renderAll();
 }
 
-function deleteFijo(i) { db.fijos.splice(i, 1); persist(); renderAll(); }
 function deleteVariable(i) { db.variables.splice(i, 1); persist(); renderAll(); }
 function deleteIngreso(i) { db.ingresos.splice(i, 1); persist(); renderAll(); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-}
-
-function openCompraModal() {
-  const options = Object.keys(db.tarjetas).map(k => '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>').join('');
+/* --- Formulario unificado de gasto --- */
+function openGastoModal() {
+  const tarjetaOptions = Object.keys(db.tarjetas).map(k => '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>').join('');
   document.getElementById('modalContent').innerHTML =
     '<button class="close-modal" onclick="closeModal()">×</button>' +
-    '<h2>Agregar compra a tarjeta</h2>' +
-    '<div class="field"><label>Tarjeta</label><select id="mTarjeta">' + options + '</select></div>' +
-    '<div class="field"><label>Concepto</label><input id="mConcepto" placeholder="Ej. Refrigerador"></div>' +
-    '<div class="field-row">' +
-    '<div class="field"><label>Monto total</label><input id="mMonto" type="number" placeholder="0.00"></div>' +
-    '<div class="field"><label>Meses (MSI)</label><input id="mMeses" type="number" value="1"></div>' +
+    '<h2>Agregar gasto</h2>' +
+    '<div class="field"><label>Concepto</label><input id="uConcepto" placeholder="Ej. Cine, Super, Gasolina"></div>' +
+    '<div class="field"><label>Monto</label><input id="uMonto" type="number" placeholder="0.00"></div>' +
+    '<div class="field"><label>Fecha</label><input id="uFecha" type="date" value="' + new Date().toISOString().slice(0,10) + '"></div>' +
+    '<div class="field"><label>Método de pago</label><select id="uMetodo" onchange="toggleMSIField()">' +
+    '<option value="efectivo">Efectivo / débito (se descuenta de inmediato)</option>' + tarjetaOptions + '</select></div>' +
+    '<div id="msiFieldWrap" class="hidden">' +
+    '<div class="field"><label>¿Cómo se paga?</label><select id="uMeses">' +
+    '<option value="1">Una sola exhibición</option>' +
+    '<option value="3">3 meses sin intereses</option>' +
+    '<option value="6">6 meses sin intereses</option>' +
+    '<option value="9">9 meses sin intereses</option>' +
+    '<option value="12">12 meses sin intereses</option>' +
+    '<option value="18">18 meses sin intereses</option>' +
+    '<option value="custom">Otro número de meses...</option>' +
+    '</select></div>' +
+    '<div class="field hidden" id="mesesCustomWrap"><label>Número de meses</label><input id="uMesesCustom" type="number" min="1"></div>' +
     '</div>' +
-    '<div class="field"><label>Fecha de compra</label><input id="mFecha" type="date"></div>' +
-    '<button class="btn" onclick="saveCompra()">Guardar</button>';
+    '<button class="btn" onclick="saveGastoUnificado()">Guardar</button>';
   document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('uMeses') && document.getElementById('uMeses').addEventListener('change', function() {
+    document.getElementById('mesesCustomWrap').classList.toggle('hidden', this.value !== 'custom');
+  });
 }
 
-function saveCompra() {
-  const tarjeta = document.getElementById('mTarjeta').value;
-  const concepto = document.getElementById('mConcepto').value || 'Compra';
-  const monto = parseFloat(document.getElementById('mMonto').value) || 0;
-  const meses = parseInt(document.getElementById('mMeses').value) || 1;
-  const fecha = document.getElementById('mFecha').value || new Date().toISOString().slice(0,10);
-  db.tarjetas[tarjeta].compras.push({ concepto, monto, meses, fecha });
+function toggleMSIField() {
+  const metodo = document.getElementById('uMetodo').value;
+  document.getElementById('msiFieldWrap').classList.toggle('hidden', metodo === 'efectivo');
+}
+
+function saveGastoUnificado() {
+  const concepto = document.getElementById('uConcepto').value || 'Gasto';
+  const monto = parseFloat(document.getElementById('uMonto').value) || 0;
+  const fecha = document.getElementById('uFecha').value || new Date().toISOString().slice(0,10);
+  const metodo = document.getElementById('uMetodo').value;
+
+  if (metodo === 'efectivo') {
+    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')) });
+  } else {
+    let meses = document.getElementById('uMeses').value;
+    if (meses === 'custom') meses = parseInt(document.getElementById('uMesesCustom').value) || 1;
+    else meses = parseInt(meses) || 1;
+    db.tarjetas[metodo].compras.push({ concepto, monto, meses, fecha });
+  }
   persist();
   closeModal();
   renderAll();
 }
 
-function openGastoModal(tipo) {
+function openGastoFijoModal() {
   document.getElementById('modalContent').innerHTML =
     '<button class="close-modal" onclick="closeModal()">×</button>' +
-    '<h2>Agregar gasto ' + (tipo === 'fijo' ? 'fijo' : 'variable') + '</h2>' +
-    '<div class="field"><label>Concepto</label><input id="gConcepto" placeholder="Ej. Renta, Super"></div>' +
+    '<h2>Agregar gasto fijo</h2>' +
+    '<div class="field"><label>Concepto</label><input id="gConcepto" placeholder="Ej. Renta, Internet"></div>' +
     '<div class="field"><label>Monto</label><input id="gMonto" type="number" placeholder="0.00"></div>' +
-    (tipo === 'fijo' ?
-      '<div class="field"><label>Frecuencia</label><select id="gFrecuencia"><option value="mensual">Mensual</option><option value="bimestral">Cada 2 meses</option></select></div>' +
-      '<div class="field"><label>Día de pago (informativo)</label><input id="gDiaPago" placeholder="Ej. 15, o \'quincenal\'"></div>' +
-      '<div class="field-row">' +
-      '<div class="field"><label>Fecha inicio (opcional)</label><input id="gInicio" type="month"></div>' +
-      '<div class="field"><label>Fecha fin (opcional)</label><input id="gFin" type="month"></div>' +
-      '</div>'
-      : '<div class="field"><label>Fecha</label><input id="gFecha" type="date"></div>') +
-    '<button class="btn" onclick="saveGasto(\'' + tipo + '\')">Guardar</button>';
+    '<div class="field"><label>Frecuencia</label><select id="gFrecuencia"><option value="mensual">Mensual</option><option value="bimestral">Cada 2 meses</option></select></div>' +
+    '<div class="field"><label>Día de pago (informativo)</label><input id="gDiaPago" placeholder="Ej. 15, o \'quincenal\'"></div>' +
+    '<div class="field-row">' +
+    '<div class="field"><label>Fecha inicio (opcional)</label><input id="gInicio" type="month"></div>' +
+    '<div class="field"><label>Fecha fin (opcional)</label><input id="gFin" type="month"></div>' +
+    '</div>' +
+    '<button class="btn" onclick="saveGastoFijo()">Guardar</button>';
   document.getElementById('modalOverlay').classList.add('open');
 }
 
-function saveGasto(tipo) {
+function saveGastoFijo() {
   const concepto = document.getElementById('gConcepto').value || 'Gasto';
   const monto = parseFloat(document.getElementById('gMonto').value) || 0;
-  if (tipo === 'fijo') {
-    const frecuencia = document.getElementById('gFrecuencia').value;
-    const diaPago = document.getElementById('gDiaPago').value || '1';
-    const inicio = document.getElementById('gInicio').value || null;
-    const fin = document.getElementById('gFin').value || null;
-    db.fijos.push({ id: Date.now(), nombre: concepto, monto, frecuencia, diaPago, inicio, fin });
-  } else {
-    const fecha = document.getElementById('gFecha').value || new Date().toISOString().slice(0,10);
-    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha)) });
-  }
+  const frecuencia = document.getElementById('gFrecuencia').value;
+  const diaPago = document.getElementById('gDiaPago').value || '1';
+  const inicio = document.getElementById('gInicio').value || null;
+  const fin = document.getElementById('gFin').value || null;
+  db.fijos.push({ id: Date.now(), nombre: concepto, monto, frecuencia, diaPago, inicio, fin });
   persist();
   closeModal();
   renderAll();
@@ -961,8 +766,7 @@ function openIngresoModal() {
     '<div class="field"><label>Concepto</label><select id="iConcepto">' +
     '<option value="Nómina">Nómina (quincena)</option>' +
     '<option value="Vales">Tarjeta de vales</option>' +
-    '<option value="Otro">Otro</option>' +
-    '</select></div>' +
+    '<option value="Otro">Otro</option></select></div>' +
     '<div class="field"><label>Monto</label><input id="iMonto" type="number" placeholder="0.00"></div>' +
     '<div class="field"><label>Fecha</label><input id="iFecha" type="date"></div>' +
     '<button class="btn" onclick="saveIngreso()">Guardar</button>';
@@ -973,7 +777,7 @@ function saveIngreso() {
   const concepto = document.getElementById('iConcepto').value;
   const monto = parseFloat(document.getElementById('iMonto').value) || 0;
   const fecha = document.getElementById('iFecha').value || new Date().toISOString().slice(0,10);
-  db.ingresos.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha)) });
+  db.ingresos.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')) });
   persist();
   closeModal();
   renderAll();
@@ -997,18 +801,6 @@ function saveConfig() {
   persist();
   closeModal();
   renderAll();
-}
-
-function quickAdd() {
-  document.getElementById('modalContent').innerHTML =
-    '<button class="close-modal" onclick="closeModal()">×</button>' +
-    '<h2>¿Qué quieres agregar?</h2>' +
-    '<button class="btn" onclick="closeModal();openCompraModal()">Compra a tarjeta (MSI)</button>' +
-    '<button class="btn" onclick="closeModal();openGastoModal(\'fijo\')">Gasto fijo</button>' +
-    '<button class="btn" onclick="closeModal();openGastoModal(\'variable\')">Gasto variable</button>' +
-    '<button class="btn" onclick="closeModal();openIngresoModal()">Ingreso</button>' +
-    '<button class="btn" onclick="closeModal();openRetiroModal()">Retiro del fondo de ahorro</button>';
-  document.getElementById('modalOverlay').classList.add('open');
 }
 </script>
 </body>

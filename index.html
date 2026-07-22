@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a1a2e">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -208,11 +209,11 @@ let charts = {};
 
 let db = {
   tarjetas: {
-    mercadoPago: { nombre: 'Mercado Pago', diaCorte: 21, diaLimitePago: 30, compras: [] },
-    nu: { nombre: 'Nu', diaCorte: 30, diaLimitePago: 9, compras: [] },
-    liverpool: { nombre: 'Liverpool', diaCorte: 7, diaLimitePago: 6, compras: [] },
-    palacioHierro: { nombre: 'Palacio de Hierro', diaCorte: 7, diaLimitePago: 7, compras: [] },
-    bbva: { nombre: 'BBVA', diaCorte: 23, diaLimitePago: 12, compras: [] }
+    mercadoPago: { nombre: 'Mercado Pago', diaCorte: 21, diaLimitePago: 30, pagoMesSiguiente: false, compras: [] },
+    nu: { nombre: 'Nu', diaCorte: 30, diaLimitePago: 9, pagoMesSiguiente: false, compras: [] },
+    liverpool: { nombre: 'Liverpool', diaCorte: 7, diaLimitePago: 6, pagoMesSiguiente: true, compras: [] },
+    palacioHierro: { nombre: 'Palacio de Hierro', diaCorte: 7, diaLimitePago: 7, pagoMesSiguiente: false, compras: [] },
+    bbva: { nombre: 'BBVA', diaCorte: 23, diaLimitePago: 12, pagoMesSiguiente: true, compras: [] }
   },
   fijos: [
     { id: 1, nombre: 'Luz', monto: 0, frecuencia: 'bimestral', diaPago: 15, inicio: '2026-01', fin: null, metodo: 'efectivo' },
@@ -246,10 +247,15 @@ function migrarDatos() {
     }
   });
   if (db.tarjetas && db.tarjetas.autoCredito) { delete db.tarjetas.autoCredito; cambiado = true; }
+  const pagoMesSiguientePorDefecto = { mercadoPago: false, nu: false, liverpool: true, palacioHierro: false, bbva: true };
   Object.keys(db.tarjetas).forEach(k => {
     const t = db.tarjetas[k];
     if (t.diaCorte === undefined) { t.diaCorte = 1; cambiado = true; }
     if (t.diaLimitePago === undefined) { t.diaLimitePago = 10; cambiado = true; }
+    if (t.pagoMesSiguiente === undefined) {
+      t.pagoMesSiguiente = pagoMesSiguientePorDefecto[k] !== undefined ? pagoMesSiguientePorDefecto[k] : true;
+      cambiado = true;
+    }
   });
   if (!db.retiros) { db.retiros = []; cambiado = true; }
   if (!db.ingresosRecurrentes) {
@@ -401,13 +407,16 @@ function mesDeCortePorFecha(tarjeta, fechaStr) {
   return mesCorte;
 }
 
-function mesDePagoDelCorte(mesCorte) {
-  return new Date(mesCorte.getFullYear(), mesCorte.getMonth() + 1, 1);
+function mesDePagoDelCorte(tarjeta, mesCorte) {
+  if (tarjeta.pagoMesSiguiente) {
+    return new Date(mesCorte.getFullYear(), mesCorte.getMonth() + 1, 1);
+  }
+  return new Date(mesCorte.getFullYear(), mesCorte.getMonth(), 1);
 }
 
 function mensualidadCompraEnMesPago(tarjeta, compra, mesRefPago) {
   const mesCorteCompra = mesDeCortePorFecha(tarjeta, compra.fecha);
-  const mesPagoCompra = mesDePagoDelCorte(mesCorteCompra);
+  const mesPagoCompra = mesDePagoDelCorte(tarjeta, mesCorteCompra);
   const idx = mesesTranscurridos(mesPagoCompra, mesRefPago);
   const meses = compra.meses || 1;
   if (idx < 0 || idx >= meses) return 0;
@@ -428,7 +437,7 @@ function mesPagoFijoConTarjeta(tarjetaKey, mesNatural) {
   // Usamos un día de referencia dentro del mes natural (día 1) para ubicar en qué corte cae
   const fechaRef = mesNatural.getFullYear() + '-' + String(mesNatural.getMonth() + 1).padStart(2,'0') + '-01';
   const mesCorte = mesDeCortePorFecha(t, fechaRef);
-  return mesDePagoDelCorte(mesCorte);
+  return mesDePagoDelCorte(t, mesCorte);
 }
 
 function quincenaDeDia(dia) { return dia <= 15 ? 'q1' : 'q2'; }
@@ -602,7 +611,7 @@ function renderResumen() {
       const mesCompra = (c.fecha || '').slice(0, 7);
       if (mesCompra !== mkVisto) return;
       const mesCorte = mesDeCortePorFecha(t, c.fecha);
-      const mesPago = mesDePagoDelCorte(mesCorte);
+      const mesPago = mesDePagoDelCorte(t, mesCorte);
       const esFuturo = mesPago.getFullYear() > currentDate.getFullYear() || (mesPago.getFullYear() === currentDate.getFullYear() && mesPago.getMonth() > currentDate.getMonth());
       if (!esFuturo) return;
       const mesPagoTxt = MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear();
@@ -626,6 +635,7 @@ function ultimosNMeses(n, mesRef) {
 
 function renderGraficas() {
   if (typeof Chart === 'undefined') return;
+  const dataLabelsPlugin = (typeof ChartDataLabels !== 'undefined') ? ChartDataLabels : null;
   const meses = ultimosNMeses(6, currentDate);
   const labels = meses.map(m => MESES_CORTOS[m.getMonth()] + ' ' + String(m.getFullYear()).slice(2));
   const ingresosArr = [];
@@ -700,8 +710,20 @@ function renderGraficas() {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#e8e8f0', font: { size: 10 }, padding: 10 } } }
-    }
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#e8e8f0', font: { size: 10 }, padding: 10 } },
+        datalabels: {
+          color: '#0f0f1a', font: { weight: 'bold', size: 11 },
+          formatter: (value, ctx) => {
+            const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+            if (!total) return '';
+            const pct = (value / total * 100);
+            return pct >= 5 ? pct.toFixed(0) + '%' : '';
+          }
+        }
+      }
+    },
+    plugins: (metodoData.length && dataLabelsPlugin) ? [dataLabelsPlugin] : []
   });
 
   const composicionLabels = [];
@@ -719,8 +741,20 @@ function renderGraficas() {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#e8e8f0', font: { size: 10 }, padding: 10 } } }
-    }
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#e8e8f0', font: { size: 10 }, padding: 10 } },
+        datalabels: {
+          color: '#0f0f1a', font: { weight: 'bold', size: 11 },
+          formatter: (value, ctx) => {
+            const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+            if (!total) return '';
+            const pct = (value / total * 100);
+            return pct >= 5 ? pct.toFixed(0) + '%' : '';
+          }
+        }
+      }
+    },
+    plugins: (composicionData.length && dataLabelsPlugin) ? [dataLabelsPlugin] : []
   });
 }
 
@@ -743,9 +777,11 @@ function renderTarjetas() {
 
     if (fijosDeEstaTarjeta.length > 0) {
       html += '<div class="row-sub" style="margin:8px 0 4px">Gastos fijos con esta tarjeta:</div>';
-      fijosDeEstaTarjeta.forEach(({ fijo }) => {
+      fijosDeEstaTarjeta.forEach(({ fijo, mesNatural }) => {
         const montoMostrar = fijo.frecuencia === 'quincenal' ? Number(fijo.monto) * ((fijo.quincenaEspecifica || 'ambas') === 'ambas' ? 2 : 1) : Number(fijo.monto);
-        html += '<div class="msi-item"><strong>' + fijo.nombre + '</strong> <span class="badge">Fijo</span><br>' + formatMoney(montoMostrar) + ' este mes</div>';
+        const mesReciboTxt = MESES[mesNatural.getMonth()] + ' ' + mesNatural.getFullYear();
+        html += '<div class="msi-item"><strong>' + fijo.nombre + '</strong> <span class="badge">Fijo</span><br>' +
+          formatMoney(montoMostrar) + ' · Recibo de ' + mesReciboTxt + '</div>';
       });
     }
 
@@ -755,8 +791,7 @@ function renderTarjetas() {
       html += '<div class="row-sub" style="margin:12px 0 4px">Compras / MSI:</div>';
       t.compras.forEach((c, i) => {
         const mesCorte = mesDeCortePorFecha(t, c.fecha);
-        const mesPago = mesDePagoDelCorte(mesCorte);
-        const idx = mesesTranscurridos(mesPago, currentDate);
+        const mesPago = mesDePagoDelCorte(t, mesCorte);
         const meses = c.meses || 1;
         const activaEsteMes = idx >= 0 && idx < meses;
         const estadoTxt = idx < 0 ? ('Se paga desde ' + MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear()) : (idx >= meses ? 'Ya liquidada' : ('Pago ' + (idx + 1) + '/' + meses));
@@ -782,6 +817,10 @@ function editTarjetaFechas(key) {
     '<h2>' + t.nombre + ' — fechas</h2>' +
     '<div class="field"><label>Día de corte (1-31)</label><input id="tCorte" type="number" min="1" max="31" value="' + t.diaCorte + '"></div>' +
     '<div class="field"><label>Día límite de pago (1-31)</label><input id="tPago" type="number" min="1" max="31" value="' + t.diaLimitePago + '"></div>' +
+    '<div class="field"><label>¿El pago cae en el mismo mes del corte, o al mes siguiente?</label><select id="tPagoMes">' +
+    '<option value="mismo"' + (!t.pagoMesSiguiente ? ' selected' : '') + '>Mismo mes del corte</option>' +
+    '<option value="siguiente"' + (t.pagoMesSiguiente ? ' selected' : '') + '>Mes siguiente al corte</option>' +
+    '</select></div>' +
     '<p class="row-sub" style="margin-bottom:8px">Si compras el día de corte o después, la compra se recorre al siguiente ciclo.</p>' +
     '<button class="btn" onclick="saveTarjetaFechas(\'' + key + '\')">Guardar</button>';
   document.getElementById('modalOverlay').classList.add('open');
@@ -790,6 +829,7 @@ function editTarjetaFechas(key) {
 function saveTarjetaFechas(key) {
   db.tarjetas[key].diaCorte = parseInt(document.getElementById('tCorte').value) || 1;
   db.tarjetas[key].diaLimitePago = parseInt(document.getElementById('tPago').value) || 1;
+  db.tarjetas[key].pagoMesSiguiente = document.getElementById('tPagoMes').value === 'siguiente';
   persist();
   closeModal();
   renderAll();
@@ -843,6 +883,7 @@ function renderFijos() {
     document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos que apliquen este mes.</div>';
     return;
   }
+  const mesVistoTxt = MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
   let html = '';
   visibles.forEach(({ f, i }) => {
     let rango = '';
@@ -859,8 +900,14 @@ function renderFijos() {
       else if (q === 'q1') frecuenciaTxt = 'Solo 1ra quincena';
       else frecuenciaTxt = 'Solo 2da quincena';
     }
+    let notaRecibo = '';
+    if (metodo !== 'efectivo') {
+      const mesPago = mesPagoFijoConTarjeta(metodo, currentDate);
+      const mesPagoTxt = MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear();
+      notaRecibo = '<div class="row-sub" style="margin-top:4px">Recibo de <strong>' + mesVistoTxt + '</strong> · se refleja en tu tarjeta en <strong>' + mesPagoTxt + '</strong></div>';
+    }
     html += '<div class="card"><div class="row"><div><div class="row-label">' + f.nombre + '</div>' +
-      '<div class="row-sub">' + frecuenciaTxt + (rango ? ' · ' + rango : '') + '</div>' +
+      '<div class="row-sub">' + frecuenciaTxt + (rango ? ' · ' + rango : '') + '</div>' + notaRecibo +
       '<span class="metodo-pill ' + pillClass + '">' + metodoNombre + '</span></div>' +
       '<span class="row-amount negative">' + formatMoney(montoMostrar) + (f.frecuencia === 'quincenal' ? '/mes' : '') + '</span></div>' +
       '<button class="btn btn-danger" onclick="confirmDeleteFijo(' + i + ')">Eliminar</button></div>';
@@ -916,7 +963,7 @@ function renderVariables() {
   tarjetaItems.forEach(({ c, i, tarjetaKey }) => {
     const t = db.tarjetas[tarjetaKey];
     const mesCorte = mesDeCortePorFecha(t, c.fecha);
-    const mesPago = mesDePagoDelCorte(mesCorte);
+    const mesPago = mesDePagoDelCorte(t, mesCorte);
     const mesPagoTxt = MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear();
     const mismomes = mesPago.getFullYear() === currentDate.getFullYear() && mesPago.getMonth() === currentDate.getMonth();
     html += '<div class="card"><div class="row"><div><div class="row-label">' + c.concepto + '</div>' +

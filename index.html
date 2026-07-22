@@ -131,6 +131,7 @@
       </div>
 
       <div class="card"><h3>Cortes y pagos de tarjetas</h3><div id="proximosPagos"></div></div>
+      <div class="card"><h3>Compras de este mes que se pagarán después</h3><div id="pendientesFuturo"></div></div>
       <div class="card"><h3>Desglose de gastos</h3><div id="desglose"></div></div>
     </div>
 
@@ -352,6 +353,12 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.remove('hidden');
   document.getElementById('viewToggle').style.display = (tab === 'resumen') ? 'flex' : 'none';
   if (tab === 'graficas') renderGraficas();
+  if (tab === 'variables') renderVariables();
+  if (tab === 'tarjetas') renderTarjetas();
+  if (tab === 'fijos') renderFijos();
+  if (tab === 'ingresos') renderIngresos();
+  if (tab === 'ahorro') renderAhorro();
+  if (tab === 'resumen') renderResumen();
 }
 
 function setViewMode(mode) {
@@ -585,6 +592,28 @@ function renderResumen() {
     cortesHtml += '<div class="row"><span class="row-label">' + t.nombre + '</span><span class="badge">Corte día ' + t.diaCorte + ' · Pago antes del ' + t.diaLimitePago + '</span></div>';
   });
   document.getElementById('proximosPagos').innerHTML = cortesHtml;
+
+  // Compras (MSI o 1 exhibición) hechas ESTE mes que se pagarán en un mes futuro distinto
+  const mkVisto = ymKey(currentDate);
+  let pendientesHtml = '';
+  Object.keys(db.tarjetas).forEach(key => {
+    const t = db.tarjetas[key];
+    t.compras.forEach(c => {
+      const mesCompra = (c.fecha || '').slice(0, 7);
+      if (mesCompra !== mkVisto) return;
+      const mesCorte = mesDeCortePorFecha(t, c.fecha);
+      const mesPago = mesDePagoDelCorte(mesCorte);
+      const esFuturo = mesPago.getFullYear() > currentDate.getFullYear() || (mesPago.getFullYear() === currentDate.getFullYear() && mesPago.getMonth() > currentDate.getMonth());
+      if (!esFuturo) return;
+      const mesPagoTxt = MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear();
+      const meses = c.meses || 1;
+      const montoTxt = meses > 1 ? (formatMoney(c.monto / meses) + '/mes x' + meses) : formatMoney(c.monto);
+      pendientesHtml += '<div class="row"><span class="row-label">' + c.concepto + ' <span class="badge">' + t.nombre + '</span></span>' +
+        '<span class="row-amount warning">' + montoTxt + ' · desde ' + mesPagoTxt + '</span></div>';
+    });
+  });
+  if (!pendientesHtml) pendientesHtml = '<div class="empty-state">Sin compras pendientes de reflejarse en meses futuros.</div>';
+  document.getElementById('pendientesFuturo').innerHTML = pendientesHtml;
 }
 
 function ultimosNMeses(n, mesRef) {
@@ -865,7 +894,8 @@ function renderVariables() {
   Object.keys(db.tarjetas).forEach(key => {
     db.tarjetas[key].compras.forEach((c, i) => {
       if (!c.esVariable) return;
-      if (ymKey(new Date(c.fecha + 'T00:00:00')) !== mk) return;
+      const mesCompra = (c.fecha || '').slice(0, 7); // 'YYYY-MM' directo del string, sin pasar por Date
+      if (mesCompra !== mk) return;
       tarjetaItems.push({ c, i, tarjetaKey: key, tipo: 'tarjeta' });
     });
   });
@@ -878,16 +908,20 @@ function renderVariables() {
   let html = '';
   efectivoItems.forEach(({ v, i }) => {
     html += '<div class="card"><div class="row"><div><div class="row-label">' + v.concepto + '</div>' +
-      '<div class="row-sub">' + v.fecha + '</div>' +
+      '<div class="row-sub">Comprado el ' + v.fecha + '</div>' +
       '<span class="metodo-pill metodo-efectivo">Efectivo / débito</span></div>' +
       '<span class="row-amount negative">' + formatMoney(v.monto) + '</span></div>' +
       '<button class="btn btn-danger" onclick="deleteVariable(' + i + ')">Eliminar</button></div>';
   });
   tarjetaItems.forEach(({ c, i, tarjetaKey }) => {
-    const nombreTarjeta = db.tarjetas[tarjetaKey].nombre;
+    const t = db.tarjetas[tarjetaKey];
+    const mesCorte = mesDeCortePorFecha(t, c.fecha);
+    const mesPago = mesDePagoDelCorte(mesCorte);
+    const mesPagoTxt = MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear();
+    const mismomes = mesPago.getFullYear() === currentDate.getFullYear() && mesPago.getMonth() === currentDate.getMonth();
     html += '<div class="card"><div class="row"><div><div class="row-label">' + c.concepto + '</div>' +
-      '<div class="row-sub">' + c.fecha + '</div>' +
-      '<span class="metodo-pill metodo-tarjeta">' + nombreTarjeta + '</span></div>' +
+      '<div class="row-sub">Comprado el ' + c.fecha + (mismomes ? '' : ' · <span class="warning">Se paga en ' + mesPagoTxt + '</span>') + '</div>' +
+      '<span class="metodo-pill metodo-tarjeta">' + t.nombre + '</span></div>' +
       '<span class="row-amount negative">' + formatMoney(c.monto) + '</span></div>' +
       '<button class="btn btn-danger" onclick="deleteCompra(\'' + tarjetaKey + '\',' + i + ')">Eliminar</button></div>';
   });

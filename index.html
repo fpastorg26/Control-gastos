@@ -469,8 +469,10 @@ function filtroQuincenaDia(dia) {
 
 /* Calcula el monto de un gasto fijo que corresponde mostrar, según si la vista es mensual o una quincena específica */
 function montoFijoSegunVista(fijo) {
+  const metodo = fijo.metodo || 'efectivo';
   if (fijo.frecuencia !== 'quincenal') {
-    return filtroQuincenaDia(fijo.diaPago || 1) ? Number(fijo.monto) : 0;
+    const diaReferencia = metodo === 'efectivo' ? (fijo.diaPago || 1) : db.tarjetas[metodo].diaLimitePago;
+    return filtroQuincenaDia(diaReferencia) ? Number(fijo.monto) : 0;
   }
   const q = fijo.quincenaEspecifica || 'ambas';
   if (viewMode === 'mensual') {
@@ -692,14 +694,31 @@ function renderTarjetas() {
   let html = '';
   Object.keys(db.tarjetas).forEach(key => {
     const t = db.tarjetas[key];
-    const totalMesPago = totalTarjetaMesPago(key, currentDate);
+    const totalCompras = totalTarjetaMesPago(key, currentDate);
+    const fijosDeEstaTarjeta = fijosQueAplicanEnMesPago(currentDate).filter(({ fijo }) => (fijo.metodo || 'efectivo') === key);
+    let totalFijosTarjeta = 0;
+    fijosDeEstaTarjeta.forEach(({ fijo }) => {
+      totalFijosTarjeta += fijo.frecuencia === 'quincenal' ? Number(fijo.monto) * ((fijo.quincenaEspecifica || 'ambas') === 'ambas' ? 2 : 1) : Number(fijo.monto);
+    });
+    const totalMesPago = totalCompras + totalFijosTarjeta;
+
     html += '<div class="card">';
     html += '<h3>' + t.nombre + ' <span class="badge">' + formatMoney(totalMesPago) + ' este mes</span></h3>';
     html += '<div class="row-sub" style="margin-bottom:8px">Corte: día ' + t.diaCorte + ' · Pago límite: día ' + t.diaLimitePago + '</div>';
     html += '<button class="btn btn-secondary" style="margin-top:0;margin-bottom:8px" onclick="editTarjetaFechas(\'' + key + '\')">Editar fechas de corte/pago</button>';
+
+    if (fijosDeEstaTarjeta.length > 0) {
+      html += '<div class="row-sub" style="margin:8px 0 4px">Gastos fijos con esta tarjeta:</div>';
+      fijosDeEstaTarjeta.forEach(({ fijo }) => {
+        const montoMostrar = fijo.frecuencia === 'quincenal' ? Number(fijo.monto) * ((fijo.quincenaEspecifica || 'ambas') === 'ambas' ? 2 : 1) : Number(fijo.monto);
+        html += '<div class="msi-item"><strong>' + fijo.nombre + '</strong> <span class="badge">Fijo</span><br>' + formatMoney(montoMostrar) + ' este mes</div>';
+      });
+    }
+
     if (t.compras.length === 0) {
-      html += '<div class="empty-state">Sin compras registradas.</div>';
+      html += '<div class="empty-state" style="margin-top:8px">Sin compras de tarjeta registradas.</div>';
     } else {
+      html += '<div class="row-sub" style="margin:12px 0 4px">Compras / MSI:</div>';
       t.compras.forEach((c, i) => {
         const mesCorte = mesDeCortePorFecha(t, c.fecha);
         const mesPago = mesDePagoDelCorte(mesCorte);

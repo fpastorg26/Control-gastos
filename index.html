@@ -255,6 +255,11 @@ function migrarDatos() {
     db.ingresosRecurrentes = [{ id: 1, concepto: 'Vales de despensa', monto: 0, cuando: 'ultimaQuincena', activo: true }];
     cambiado = true;
   }
+  Object.keys(db.tarjetas).forEach(k => {
+    (db.tarjetas[k].compras || []).forEach(c => {
+      if (c.esVariable === undefined && (c.meses || 1) === 1) { c.esVariable = true; cambiado = true; }
+    });
+  });
   if (cambiado) saveLocal();
 }
 
@@ -726,7 +731,8 @@ function renderTarjetas() {
         const meses = c.meses || 1;
         const activaEsteMes = idx >= 0 && idx < meses;
         const estadoTxt = idx < 0 ? ('Se paga desde ' + MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear()) : (idx >= meses ? 'Ya liquidada' : ('Pago ' + (idx + 1) + '/' + meses));
-        html += '<div class="msi-item"><strong>' + c.concepto + '</strong>' + (activaEsteMes ? '' : ' <span class="badge">' + estadoTxt + '</span>') + '<br>' +
+        const etiquetaTipo = c.esVariable ? ' <span class="badge ok">Gasto variable</span>' : '';
+        html += '<div class="msi-item"><strong>' + c.concepto + '</strong>' + etiquetaTipo + (activaEsteMes ? '' : ' <span class="badge">' + estadoTxt + '</span>') + '<br>' +
           (activaEsteMes ? (estadoTxt + ' · ' + formatMoney(c.monto / meses) + ' · ') : '') +
           'Total: ' + formatMoney(c.monto) +
           '<div class="btn-row">' +
@@ -762,7 +768,10 @@ function saveTarjetaFechas(key) {
 
 function deleteCompra(tarjetaKey, i) {
   const c = db.tarjetas[tarjetaKey].compras[i];
-  if (confirm('¿Eliminar por completo la compra "' + c.concepto + '" (' + formatMoney(c.monto) + ')? Esto la quita de todos los meses.')) {
+  const mensaje = c.esVariable
+    ? '¿Eliminar el gasto "' + c.concepto + '" (' + formatMoney(c.monto) + ')?'
+    : '¿Eliminar por completo la compra "' + c.concepto + '" (' + formatMoney(c.monto) + ')? Esto la quita de todos los meses en los que tenía mensualidades pendientes.';
+  if (confirm(mensaje)) {
     db.tarjetas[tarjetaKey].compras.splice(i, 1);
     persist();
     renderAll();
@@ -848,18 +857,39 @@ function confirmDeleteFijo(i) {
 
 function renderVariables() {
   const mk = ymKey(currentDate);
-  const items = db.variables.filter(v => v.mes === mk);
-  if (items.length === 0) {
-    document.getElementById('variablesList').innerHTML = '<div class="empty-state">Sin gastos en efectivo/débito este mes.</div>';
+  const efectivoItems = db.variables
+    .map((v, i) => ({ v, i, tipo: 'efectivo' }))
+    .filter(({ v }) => v.mes === mk);
+
+  const tarjetaItems = [];
+  Object.keys(db.tarjetas).forEach(key => {
+    db.tarjetas[key].compras.forEach((c, i) => {
+      if (!c.esVariable) return;
+      if (ymKey(new Date(c.fecha + 'T00:00:00')) !== mk) return;
+      tarjetaItems.push({ c, i, tarjetaKey: key, tipo: 'tarjeta' });
+    });
+  });
+
+  if (efectivoItems.length === 0 && tarjetaItems.length === 0) {
+    document.getElementById('variablesList').innerHTML = '<div class="empty-state">Sin gastos variables este mes.</div>';
     return;
   }
+
   let html = '';
-  db.variables.forEach((v, i) => {
-    if (v.mes !== mk) return;
+  efectivoItems.forEach(({ v, i }) => {
     html += '<div class="card"><div class="row"><div><div class="row-label">' + v.concepto + '</div>' +
-      '<div class="row-sub">' + v.fecha + '</div></div>' +
+      '<div class="row-sub">' + v.fecha + '</div>' +
+      '<span class="metodo-pill metodo-efectivo">Efectivo / débito</span></div>' +
       '<span class="row-amount negative">' + formatMoney(v.monto) + '</span></div>' +
       '<button class="btn btn-danger" onclick="deleteVariable(' + i + ')">Eliminar</button></div>';
+  });
+  tarjetaItems.forEach(({ c, i, tarjetaKey }) => {
+    const nombreTarjeta = db.tarjetas[tarjetaKey].nombre;
+    html += '<div class="card"><div class="row"><div><div class="row-label">' + c.concepto + '</div>' +
+      '<div class="row-sub">' + c.fecha + '</div>' +
+      '<span class="metodo-pill metodo-tarjeta">' + nombreTarjeta + '</span></div>' +
+      '<span class="row-amount negative">' + formatMoney(c.monto) + '</span></div>' +
+      '<button class="btn btn-danger" onclick="deleteCompra(\'' + tarjetaKey + '\',' + i + ')">Eliminar</button></div>';
   });
   document.getElementById('variablesList').innerHTML = html;
 }
@@ -994,12 +1024,12 @@ function saveGastoUnificado() {
   const metodo = document.getElementById('uMetodo').value;
 
   if (metodo === 'efectivo') {
-    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')) });
+    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')), metodo: 'efectivo' });
   } else {
     let meses = document.getElementById('uMeses').value;
     if (meses === 'custom') meses = parseInt(document.getElementById('uMesesCustom').value) || 1;
     else meses = parseInt(meses) || 1;
-    db.tarjetas[metodo].compras.push({ concepto, monto, meses, fecha });
+    db.tarjetas[metodo].compras.push({ concepto, monto, meses, fecha, esVariable: true });
   }
   persist();
   closeModal();

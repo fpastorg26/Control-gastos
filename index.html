@@ -792,6 +792,7 @@ function renderTarjetas() {
       t.compras.forEach((c, i) => {
         const mesCorte = mesDeCortePorFecha(t, c.fecha);
         const mesPago = mesDePagoDelCorte(t, mesCorte);
+        const idx = mesesTranscurridos(mesPago, currentDate);
         const meses = c.meses || 1;
         const activaEsteMes = idx >= 0 && idx < meses;
         const estadoTxt = idx < 0 ? ('Se paga desde ' + MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear()) : (idx >= meses ? 'Ya liquidada' : ('Pago ' + (idx + 1) + '/' + meses));

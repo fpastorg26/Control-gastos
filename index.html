@@ -160,6 +160,13 @@
     </div>
 
     <div id="tab-fijos" class="tab-content hidden">
+      <div class="field" style="margin-bottom:12px">
+        <label>Filtrar por método de pago</label>
+        <select id="filtroMetodoFijos" onchange="renderFijos()">
+          <option value="todos">Todos</option>
+          <option value="efectivo">Efectivo / débito</option>
+        </select>
+      </div>
       <div id="fijosList"></div>
       <button class="btn" onclick="openGastoFijoModal()">+ Agregar gasto fijo</button>
     </div>
@@ -243,6 +250,10 @@ function migrarDatos() {
     }
     if (f.frecuencia === 'quincenal' && f.quincenaEspecifica === undefined) {
       f.quincenaEspecifica = 'ambas';
+      cambiado = true;
+    }
+    if ((f.metodo && f.metodo !== 'efectivo') && f.diaRecibo === undefined) {
+      f.diaRecibo = 1;
       cambiado = true;
     }
   });
@@ -431,11 +442,11 @@ function totalTarjetaMesPago(tarjetaKey, mesRefPago) {
 }
 
 /* Para un gasto fijo pagado con tarjeta, calcula en qué mes de pago cae, dado el mes "natural" del gasto fijo */
-function mesPagoFijoConTarjeta(tarjetaKey, mesNatural) {
+function mesPagoFijoConTarjeta(tarjetaKey, mesNatural, diaRecibo) {
   const t = db.tarjetas[tarjetaKey];
   if (!t) return mesNatural;
-  // Usamos un día de referencia dentro del mes natural (día 1) para ubicar en qué corte cae
-  const fechaRef = mesNatural.getFullYear() + '-' + String(mesNatural.getMonth() + 1).padStart(2,'0') + '-01';
+  const dia = diaRecibo || 1;
+  const fechaRef = mesNatural.getFullYear() + '-' + String(mesNatural.getMonth() + 1).padStart(2,'0') + '-' + String(dia).padStart(2,'0');
   const mesCorte = mesDeCortePorFecha(t, fechaRef);
   return mesDePagoDelCorte(t, mesCorte);
 }
@@ -472,7 +483,7 @@ function fijosQueAplicanEnMesPago(mesRefPago) {
       for (let delta = -2; delta <= 0; delta++) {
         const mesNatural = new Date(mesRefPago.getFullYear(), mesRefPago.getMonth() + delta, 1);
         if (!fijoAplicaEnMesNatural(f, mesNatural)) continue;
-        const mesPagoCalculado = mesPagoFijoConTarjeta(metodo, mesNatural);
+        const mesPagoCalculado = mesPagoFijoConTarjeta(metodo, mesNatural, f.diaRecibo);
         if (mesPagoCalculado.getFullYear() === mesRefPago.getFullYear() && mesPagoCalculado.getMonth() === mesRefPago.getMonth()) {
           resultado.push({ fijo: f, mesNatural });
         }
@@ -879,9 +890,22 @@ function saveEditCompra(origenKey, i) {
 }
 
 function renderFijos() {
-  const visibles = db.fijos.map((f, i) => ({ f, i })).filter(({ f }) => fijoAplicaEnMesNatural(f, currentDate));
+  const filtroSelect = document.getElementById('filtroMetodoFijos');
+  if (filtroSelect && filtroSelect.dataset.poblado !== 'true') {
+    let opcionesTarjetas = '';
+    Object.keys(db.tarjetas).forEach(k => { opcionesTarjetas += '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>'; });
+    filtroSelect.insertAdjacentHTML('beforeend', opcionesTarjetas);
+    filtroSelect.dataset.poblado = 'true';
+  }
+  const filtroMetodo = filtroSelect ? filtroSelect.value : 'todos';
+
+  const visibles = db.fijos
+    .map((f, i) => ({ f, i }))
+    .filter(({ f }) => fijoAplicaEnMesNatural(f, currentDate))
+    .filter(({ f }) => filtroMetodo === 'todos' || (f.metodo || 'efectivo') === filtroMetodo);
+
   if (visibles.length === 0) {
-    document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos que apliquen este mes.</div>';
+    document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos que apliquen este mes' + (filtroMetodo !== 'todos' ? ' con ese método de pago' : '') + '.</div>';
     return;
   }
   const mesVistoTxt = MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
@@ -903,7 +927,7 @@ function renderFijos() {
     }
     let notaRecibo = '';
     if (metodo !== 'efectivo') {
-      const mesPago = mesPagoFijoConTarjeta(metodo, currentDate);
+      const mesPago = mesPagoFijoConTarjeta(metodo, currentDate, f.diaRecibo);
       const mesPagoTxt = MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear();
       notaRecibo = '<div class="row-sub" style="margin-top:4px">Recibo de <strong>' + mesVistoTxt + '</strong> · se refleja en tu tarjeta en <strong>' + mesPagoTxt + '</strong></div>';
     }
@@ -911,9 +935,29 @@ function renderFijos() {
       '<div class="row-sub">' + frecuenciaTxt + (rango ? ' · ' + rango : '') + '</div>' + notaRecibo +
       '<span class="metodo-pill ' + pillClass + '">' + metodoNombre + '</span></div>' +
       '<span class="row-amount negative">' + formatMoney(montoMostrar) + (f.frecuencia === 'quincenal' ? '/mes' : '') + '</span></div>' +
-      '<button class="btn btn-danger" onclick="confirmDeleteFijo(' + i + ')">Eliminar</button></div>';
+      '<div class="btn-row">' +
+      '<button class="btn btn-secondary" onclick="confirmEditFijo(' + i + ')">Editar</button>' +
+      '<button class="btn btn-danger" onclick="confirmDeleteFijo(' + i + ')">Eliminar</button>' +
+      '</div></div>';
   });
   document.getElementById('fijosList').innerHTML = html;
+}
+
+function confirmEditFijo(i) {
+  const f = db.fijos[i];
+  const soloDesdeEsteMes = confirm('¿Editar "' + f.nombre + '" solo a partir de ' + MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear() + ' en adelante?\n\nAceptar = los meses anteriores conservan los datos actuales, y abrirás el formulario para capturar los nuevos datos desde este mes.\nCancelar = editar el registro completo (afecta también meses pasados).');
+  if (soloDesdeEsteMes) {
+    const mesAnterior = new Date(currentDate);
+    mesAnterior.setMonth(mesAnterior.getMonth() - 1);
+    const finAnterior = ymKey(mesAnterior);
+    const copiaNueva = Object.assign({}, f, { id: Date.now(), inicio: ymKey(currentDate) });
+    f.fin = finAnterior;
+    db.fijos.push(copiaNueva);
+    persist();
+    openGastoFijoModal(db.fijos.length - 1);
+  } else {
+    openGastoFijoModal(i);
+  }
 }
 
 function confirmDeleteFijo(i) {
@@ -1119,30 +1163,36 @@ function saveGastoUnificado() {
 }
 
 /* --- Gastos fijos, ahora con método de pago y frecuencia quincenal --- */
-function openGastoFijoModal() {
-  const tarjetaOptions = Object.keys(db.tarjetas).map(k => '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>').join('');
+function openGastoFijoModal(indexEditar) {
+  const editando = indexEditar !== undefined;
+  const f = editando ? db.fijos[indexEditar] : null;
+  const tarjetaOptions = Object.keys(db.tarjetas).map(k => '<option value="' + k + '"' + (f && f.metodo === k ? ' selected' : '') + '>' + db.tarjetas[k].nombre + '</option>').join('');
+  const metodoActual = f ? (f.metodo || 'efectivo') : 'efectivo';
   document.getElementById('modalContent').innerHTML =
     '<button class="close-modal" onclick="closeModal()">×</button>' +
-    '<h2>Agregar gasto fijo</h2>' +
-    '<div class="field"><label>Concepto</label><input id="gConcepto" placeholder="Ej. Renta, Internet, Netflix"></div>' +
-    '<div class="field"><label>Monto</label><input id="gMonto" type="number" placeholder="0.00"></div>' +
+    '<h2>' + (editando ? 'Editar gasto fijo' : 'Agregar gasto fijo') + '</h2>' +
+    '<div class="field"><label>Concepto</label><input id="gConcepto" placeholder="Ej. Renta, Internet, Netflix" value="' + (f ? f.nombre : '') + '"></div>' +
+    '<div class="field"><label>Monto</label><input id="gMonto" type="number" placeholder="0.00" value="' + (f ? f.monto : '') + '"></div>' +
     '<div class="field"><label>Método de pago</label><select id="gMetodo" onchange="toggleFrecuenciaFijo()">' +
-    '<option value="efectivo">Efectivo / débito</option>' + tarjetaOptions + '</select></div>' +
+    '<option value="efectivo"' + (metodoActual === 'efectivo' ? ' selected' : '') + '>Efectivo / débito</option>' + tarjetaOptions + '</select></div>' +
+    '<div class="field' + (metodoActual === 'efectivo' ? ' hidden' : '') + '" id="diaReciboWrap"><label>¿Qué día del mes cobra este servicio? (día de recibo)</label>' +
+    '<input id="gDiaRecibo" type="number" min="1" max="31" placeholder="Ej. 3" value="' + (f && f.diaRecibo ? f.diaRecibo : '') + '">' +
+    '<p class="row-sub" style="margin-top:4px">Con este día, la app calcula si el cobro ya pasó el corte de tu tarjeta o no.</p></div>' +
     '<div class="field"><label>Frecuencia</label><select id="gFrecuencia" onchange="toggleQuincenaEspecifica()">' +
-    '<option value="mensual">Mensual</option>' +
-    '<option value="quincenal" id="optQuincenal">Quincenal (cada quincena)</option>' +
-    '<option value="bimestral">Cada 2 meses</option>' +
+    '<option value="mensual"' + (f && f.frecuencia === 'mensual' ? ' selected' : '') + '>Mensual</option>' +
+    '<option value="quincenal" id="optQuincenal"' + (f && f.frecuencia === 'quincenal' ? ' selected' : '') + '>Quincenal (cada quincena)</option>' +
+    '<option value="bimestral"' + (f && f.frecuencia === 'bimestral' ? ' selected' : '') + '>Cada 2 meses</option>' +
     '</select></div>' +
-    '<div class="field hidden" id="quincenaEspecificaWrap"><label>¿En qué quincena cae el pago?</label><select id="gQuincenaEspecifica">' +
-    '<option value="ambas">Ambas quincenas (paga la mitad en cada una)</option>' +
-    '<option value="q1">Solo primera quincena (día 1-15)</option>' +
-    '<option value="q2">Solo segunda quincena (día 16 en adelante)</option>' +
+    '<div class="field' + (f && f.frecuencia === 'quincenal' ? '' : ' hidden') + '" id="quincenaEspecificaWrap"><label>¿En qué quincena cae el pago?</label><select id="gQuincenaEspecifica">' +
+    '<option value="ambas"' + (f && f.quincenaEspecifica === 'ambas' ? ' selected' : '') + '>Ambas quincenas (paga la mitad en cada una)</option>' +
+    '<option value="q1"' + (f && f.quincenaEspecifica === 'q1' ? ' selected' : '') + '>Solo primera quincena (día 1-15)</option>' +
+    '<option value="q2"' + (f && f.quincenaEspecifica === 'q2' ? ' selected' : '') + '>Solo segunda quincena (día 16 en adelante)</option>' +
     '</select></div>' +
     '<div class="field-row">' +
-    '<div class="field"><label>Fecha inicio (opcional)</label><input id="gInicio" type="month"></div>' +
-    '<div class="field"><label>Fecha fin (opcional)</label><input id="gFin" type="month"></div>' +
+    '<div class="field"><label>Fecha inicio (opcional)</label><input id="gInicio" type="month" value="' + (f && f.inicio ? f.inicio : '') + '"></div>' +
+    '<div class="field"><label>Fecha fin (opcional)</label><input id="gFin" type="month" value="' + (f && f.fin ? f.fin : '') + '"></div>' +
     '</div>' +
-    '<button class="btn" onclick="saveGastoFijo()">Guardar</button>';
+    '<button class="btn" onclick="saveGastoFijo(' + (editando ? indexEditar : 'undefined') + ')">Guardar</button>';
   document.getElementById('modalOverlay').classList.add('open');
 }
 
@@ -1150,6 +1200,7 @@ function toggleFrecuenciaFijo() {
   const metodo = document.getElementById('gMetodo').value;
   const optQuincenal = document.getElementById('optQuincenal');
   const gFrecuencia = document.getElementById('gFrecuencia');
+  document.getElementById('diaReciboWrap').classList.toggle('hidden', metodo === 'efectivo');
   if (metodo !== 'efectivo') {
     if (gFrecuencia.value === 'quincenal') gFrecuencia.value = 'mensual';
     optQuincenal.disabled = true;
@@ -1164,16 +1215,22 @@ function toggleQuincenaEspecifica() {
   document.getElementById('quincenaEspecificaWrap').classList.toggle('hidden', frecuencia !== 'quincenal');
 }
 
-function saveGastoFijo() {
+function saveGastoFijo(indexEditar) {
   const concepto = document.getElementById('gConcepto').value || 'Gasto';
   const monto = parseFloat(document.getElementById('gMonto').value) || 0;
   const frecuencia = document.getElementById('gFrecuencia').value;
   const metodo = document.getElementById('gMetodo').value;
+  const diaRecibo = metodo !== 'efectivo' ? (parseInt(document.getElementById('gDiaRecibo').value) || 1) : null;
   const quincenaEspecifica = frecuencia === 'quincenal' ? document.getElementById('gQuincenaEspecifica').value : null;
   const diaPago = frecuencia === 'quincenal' ? 'quincenal' : '1';
   const inicio = document.getElementById('gInicio').value || ymKey(currentDate);
   const fin = document.getElementById('gFin').value || null;
-  db.fijos.push({ id: Date.now(), nombre: concepto, monto, frecuencia, diaPago, quincenaEspecifica, inicio, fin, metodo });
+  const nuevoFijo = { nombre: concepto, monto, frecuencia, diaPago, quincenaEspecifica, diaRecibo, inicio, fin, metodo };
+  if (indexEditar !== undefined) {
+    db.fijos[indexEditar] = Object.assign({}, db.fijos[indexEditar], nuevoFijo);
+  } else {
+    db.fijos.push(Object.assign({ id: Date.now() }, nuevoFijo));
+  }
   persist();
   closeModal();
   renderAll();

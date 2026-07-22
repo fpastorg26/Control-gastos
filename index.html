@@ -367,7 +367,7 @@ let db = {
     bbva: { nombre: 'BBVA', diaPago: 12, compras: [] }
   },
   fijos: [
-    { id: 1, nombre: 'Luz', monto: 0, frecuencia: 'bimestral', diaPago: 15, inicio: null, fin: null },
+    { id: 1, nombre: 'Luz', monto: 0, frecuencia: 'bimestral', diaPago: 15, inicio: '2026-01', fin: null },
     { id: 2, nombre: 'Crédito del carro', monto: 0, frecuencia: 'mensual', diaPago: 'quincenal', inicio: null, fin: null }
   ],
   variables: [],
@@ -396,8 +396,20 @@ function loadLocal() {
       db = Object.assign(db, loaded);
       if (!db.retiros) db.retiros = [];
       if (db.tarjetas && db.tarjetas.autoCredito) delete db.tarjetas.autoCredito;
+      migrarFijosSinAncla();
     } catch(e) {}
   }
+}
+
+function migrarFijosSinAncla() {
+  let cambiado = false;
+  (db.fijos || []).forEach(f => {
+    if (f.frecuencia === 'bimestral' && !f.inicio) {
+      f.inicio = '2026-01';
+      cambiado = true;
+    }
+  });
+  if (cambiado) saveLocal();
 }
 
 window.onload = function() {
@@ -442,6 +454,7 @@ async function loadFromDrive() {
     const remote = await res.json();
     db = Object.assign(db, remote);
     if (!db.retiros) db.retiros = [];
+    migrarFijosSinAncla();
     saveLocal();
   } else {
     await saveToDrive();
@@ -565,7 +578,7 @@ function fijoAplicaEnMes(f, mesRef) {
     if (mesRef > new Date(fin.getFullYear(), fin.getMonth(), 1)) return false;
   }
   if (f.frecuencia === 'bimestral') {
-    const base = f.inicio ? new Date(f.inicio + '-01T00:00:00') : mesRef;
+    const base = f.inicio ? new Date(f.inicio + '-01T00:00:00') : new Date(2026, 0, 1);
     const diff = mesesTranscurridos(base, mesRef);
     return (diff % 2 === 0);
   }
@@ -926,7 +939,7 @@ function saveGasto(tipo) {
   if (tipo === 'fijo') {
     const frecuencia = document.getElementById('gFrecuencia').value;
     const diaPago = document.getElementById('gDiaPago').value || '1';
-    const inicio = document.getElementById('gInicio').value || null;
+    const inicio = document.getElementById('gInicio').value || ymKey(currentDate);
     const fin = document.getElementById('gFin').value || null;
     db.fijos.push({ id: Date.now(), nombre: concepto, monto, frecuencia, diaPago, inicio, fin });
   } else {

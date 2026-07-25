@@ -157,6 +157,7 @@
 
     <div id="tab-tarjetas" class="tab-content hidden">
       <div id="tarjetasList"></div>
+      <button class="btn" onclick="openNuevaTarjetaModal()">+ Agregar tarjeta</button>
     </div>
 
     <div id="tab-fijos" class="tab-content hidden">
@@ -784,7 +785,10 @@ function renderTarjetas() {
     html += '<div class="card">';
     html += '<h3>' + t.nombre + ' <span class="badge">' + formatMoney(totalMesPago) + ' este mes</span></h3>';
     html += '<div class="row-sub" style="margin-bottom:8px">Corte: día ' + t.diaCorte + ' · Pago límite: día ' + t.diaLimitePago + '</div>';
-    html += '<button class="btn btn-secondary" style="margin-top:0;margin-bottom:8px" onclick="editTarjetaFechas(\'' + key + '\')">Editar fechas de corte/pago</button>';
+    html += '<div class="btn-row">' +
+      '<button class="btn btn-secondary" style="margin-top:0" onclick="editTarjetaFechas(\'' + key + '\')">Editar fechas</button>' +
+      '<button class="btn btn-danger" style="margin-top:0" onclick="eliminarTarjeta(\'' + key + '\')">Eliminar tarjeta</button>' +
+      '</div>';
 
     if (fijosDeEstaTarjeta.length > 0) {
       html += '<div class="row-sub" style="margin:8px 0 4px">Gastos fijos con esta tarjeta:</div>';
@@ -799,27 +803,82 @@ function renderTarjetas() {
     if (t.compras.length === 0) {
       html += '<div class="empty-state" style="margin-top:8px">Sin compras de tarjeta registradas.</div>';
     } else {
-      html += '<div class="row-sub" style="margin:12px 0 4px">Compras / MSI:</div>';
-      t.compras.forEach((c, i) => {
-        const mesCorte = mesDeCortePorFecha(t, c.fecha);
-        const mesPago = mesDePagoDelCorte(t, mesCorte);
-        const idx = mesesTranscurridos(mesPago, currentDate);
-        const meses = c.meses || 1;
-        const activaEsteMes = idx >= 0 && idx < meses;
-        const estadoTxt = idx < 0 ? ('Se paga desde ' + MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear()) : (idx >= meses ? 'Ya liquidada' : ('Pago ' + (idx + 1) + '/' + meses));
-        const etiquetaTipo = c.esVariable ? ' <span class="badge ok">Gasto variable</span>' : '';
-        html += '<div class="msi-item"><strong>' + c.concepto + '</strong>' + etiquetaTipo + (activaEsteMes ? '' : ' <span class="badge">' + estadoTxt + '</span>') + '<br>' +
-          (activaEsteMes ? (estadoTxt + ' · ' + formatMoney(c.monto / meses) + ' · ') : '') +
-          'Total: ' + formatMoney(c.monto) +
-          '<div class="btn-row">' +
-          '<button class="btn btn-secondary" onclick="editCompra(\'' + key + '\',' + i + ')">Editar</button>' +
-          '<button class="btn btn-danger" onclick="deleteCompra(\'' + key + '\',' + i + ')">Eliminar</button>' +
-          '</div></div>';
-      });
+      const comprasVisibles = t.compras
+        .map((c, i) => ({ c, i }))
+        .filter(({ c }) => {
+          const mesCorte = mesDeCortePorFecha(t, c.fecha);
+          const mesPago = mesDePagoDelCorte(t, mesCorte);
+          const idx = mesesTranscurridos(mesPago, currentDate);
+          const meses = c.meses || 1;
+          return idx < meses; // oculta las ya liquidadas (idx >= meses), muestra activas y futuras
+        });
+      if (comprasVisibles.length === 0) {
+        html += '<div class="empty-state" style="margin-top:8px">Sin compras activas o pendientes este mes.</div>';
+      } else {
+        html += '<div class="row-sub" style="margin:12px 0 4px">Compras / MSI:</div>';
+        comprasVisibles.forEach(({ c, i }) => {
+          const mesCorte = mesDeCortePorFecha(t, c.fecha);
+          const mesPago = mesDePagoDelCorte(t, mesCorte);
+          const idx = mesesTranscurridos(mesPago, currentDate);
+          const meses = c.meses || 1;
+          const activaEsteMes = idx >= 0 && idx < meses;
+          const estadoTxt = idx < 0 ? ('Se paga desde ' + MESES[mesPago.getMonth()] + ' ' + mesPago.getFullYear()) : ('Pago ' + (idx + 1) + '/' + meses);
+          const etiquetaTipo = c.esVariable ? ' <span class="badge ok">Gasto variable</span>' : '';
+          html += '<div class="msi-item"><strong>' + c.concepto + '</strong>' + etiquetaTipo + (activaEsteMes ? '' : ' <span class="badge">' + estadoTxt + '</span>') + '<br>' +
+            (activaEsteMes ? (estadoTxt + ' · ' + formatMoney(c.monto / meses) + ' · ') : '') +
+            'Total: ' + formatMoney(c.monto) +
+            '<div class="btn-row">' +
+            '<button class="btn btn-secondary" onclick="editCompra(\'' + key + '\',' + i + ')">Editar</button>' +
+            '<button class="btn btn-danger" onclick="deleteCompra(\'' + key + '\',' + i + ')">Eliminar</button>' +
+            '</div></div>';
+        });
+      }
     }
     html += '</div>';
   });
   document.getElementById('tarjetasList').innerHTML = html;
+}
+
+function openNuevaTarjetaModal() {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Agregar nueva tarjeta</h2>' +
+    '<div class="field"><label>Nombre de la tarjeta</label><input id="nTarjetaNombre" placeholder="Ej. American Express"></div>' +
+    '<div class="field"><label>Día de corte (1-31)</label><input id="nTarjetaCorte" type="number" min="1" max="31" placeholder="Ej. 15"></div>' +
+    '<div class="field"><label>Día límite de pago (1-31)</label><input id="nTarjetaPago" type="number" min="1" max="31" placeholder="Ej. 5"></div>' +
+    '<div class="field"><label>¿El pago cae en el mismo mes del corte, o al mes siguiente?</label><select id="nTarjetaPagoMes">' +
+    '<option value="mismo">Mismo mes del corte</option>' +
+    '<option value="siguiente">Mes siguiente al corte</option>' +
+    '</select></div>' +
+    '<button class="btn" onclick="saveNuevaTarjeta()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveNuevaTarjeta() {
+  const nombre = document.getElementById('nTarjetaNombre').value || 'Tarjeta';
+  const diaCorte = parseInt(document.getElementById('nTarjetaCorte').value) || 1;
+  const diaLimitePago = parseInt(document.getElementById('nTarjetaPago').value) || 1;
+  const pagoMesSiguiente = document.getElementById('nTarjetaPagoMes').value === 'siguiente';
+  const key = 'tarjeta_' + Date.now();
+  db.tarjetas[key] = { nombre, diaCorte, diaLimitePago, pagoMesSiguiente, compras: [] };
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function eliminarTarjeta(key) {
+  const t = db.tarjetas[key];
+  const tieneCompras = t.compras.length > 0;
+  const fijosAsociados = db.fijos.filter(f => f.metodo === key);
+  if (tieneCompras || fijosAsociados.length > 0) {
+    alert('No se puede eliminar "' + t.nombre + '" porque tiene compras o gastos fijos asociados. Elimina o reasigna esos gastos primero.');
+    return;
+  }
+  if (confirm('¿Eliminar la tarjeta "' + t.nombre + '"? No tiene compras ni gastos fijos asociados.')) {
+    delete db.tarjetas[key];
+    persist();
+    renderAll();
+  }
 }
 
 function editTarjetaFechas(key) {
@@ -891,11 +950,12 @@ function saveEditCompra(origenKey, i) {
 
 function renderFijos() {
   const filtroSelect = document.getElementById('filtroMetodoFijos');
-  if (filtroSelect && filtroSelect.dataset.poblado !== 'true') {
-    let opcionesTarjetas = '';
-    Object.keys(db.tarjetas).forEach(k => { opcionesTarjetas += '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>'; });
-    filtroSelect.insertAdjacentHTML('beforeend', opcionesTarjetas);
-    filtroSelect.dataset.poblado = 'true';
+  if (filtroSelect) {
+    const valorPrevio = filtroSelect.value;
+    let opciones = '<option value="todos">Todos</option><option value="efectivo">Efectivo / débito</option>';
+    Object.keys(db.tarjetas).forEach(k => { opciones += '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>'; });
+    filtroSelect.innerHTML = opciones;
+    if ([...filtroSelect.options].some(o => o.value === valorPrevio)) filtroSelect.value = valorPrevio;
   }
   const filtroMetodo = filtroSelect ? filtroSelect.value : 'todos';
 

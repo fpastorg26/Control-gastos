@@ -75,6 +75,35 @@
   .metodo-pill { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
   .metodo-efectivo { background: #1a3a3a; color: #4ecdc4; }
   .metodo-tarjeta { background: #3a2a1a; color: #ffb366; }
+  .car-hero { background: linear-gradient(135deg, #16213e, #1a1a2e); border-radius: 14px; padding: 18px; margin-bottom: 14px; border: 1px solid #2a2a3e; }
+  .car-hero .car-name { font-size: 17px; font-weight: 700; }
+  .car-hero .car-sub { font-size: 12px; color: #8888a8; margin-top: 2px; }
+  .car-hero .km-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+  .car-hero .km-value { font-size: 26px; font-weight: 700; color: #4ecdc4; }
+  .car-hero .km-label { font-size: 11px; color: #8888a8; }
+  .service-item { background: #22223a; border-radius: 10px; padding: 12px; margin-top: 8px; }
+  .service-item .service-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .service-item .service-name { font-size: 13px; font-weight: 600; }
+  .service-item .service-meta { font-size: 11px; color: #7878a0; margin-top: 3px; }
+  .service-item .service-cost { font-size: 13px; font-weight: 600; color: #ff6b6b; }
+  .suggestion-item { border-radius: 10px; padding: 12px; margin-top: 8px; border-left: 3px solid #4ecdc4; background: #16213e; }
+  .suggestion-item.urgent { border-left-color: #ff6b6b; background: #2a1a1a; }
+  .suggestion-item.soon { border-left-color: #ffd166; background: #2a2410; }
+  .suggestion-item .sugg-top { display: flex; justify-content: space-between; align-items: center; }
+  .suggestion-item .sugg-name { font-size: 13px; font-weight: 600; }
+  .suggestion-item .sugg-detail { font-size: 11px; color: #a8a8c8; margin-top: 4px; }
+  .progress-bar { height: 6px; border-radius: 4px; background: #2a2a4e; margin-top: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #4ecdc4; }
+  .progress-fill.urgent { background: #ff6b6b; }
+  .progress-fill.soon { background: #ffd166; }
+  .fondo-item { background: #22223a; border-radius: 10px; padding: 12px; margin-top: 8px; }
+  .fondo-item .fondo-top { display: flex; justify-content: space-between; align-items: center; }
+  .fondo-item .fondo-name { font-size: 14px; font-weight: 600; }
+  .fondo-item .fondo-saldo { font-size: 16px; font-weight: 700; }
+  .fondo-item .fondo-meta { font-size: 11px; color: #7878a0; margin-top: 4px; }
+  .badge.fondo { background: #2a1a3a; color: #c896ff; }
+  .movimiento-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2a2a3e; font-size: 12px; }
+  .movimiento-item:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -103,6 +132,7 @@
     <div class="tab" data-tab="variables" onclick="switchTab('variables')">Variables</div>
     <div class="tab" data-tab="ingresos" onclick="switchTab('ingresos')">Ingresos</div>
     <div class="tab" data-tab="ahorro" onclick="switchTab('ahorro')">Ahorro</div>
+    <div class="tab" data-tab="carro" onclick="switchTab('carro')">Carro</div>
   </div>
 
   <div class="content">
@@ -132,6 +162,7 @@
       </div>
 
       <div class="card"><h3>Cortes y pagos de tarjetas</h3><div id="proximosPagos"></div></div>
+      <div class="card"><h3>Faltante del mes y de dónde se cubrió</h3><div id="deficitMesCard"></div></div>
       <div class="card"><h3>Compras de este mes que se pagarán después</h3><div id="pendientesFuturo"></div></div>
       <div class="card"><h3>Desglose de gastos</h3><div id="desglose"></div></div>
     </div>
@@ -193,6 +224,24 @@
       <div class="card"><h3>Historial de retiros</h3><div id="retirosList"></div></div>
       <button class="btn btn-secondary" onclick="openRetiroModal()">Registrar retiro del fondo</button>
     </div>
+
+    <div id="tab-carro" class="tab-content hidden">
+      <div class="car-hero" id="carHero"></div>
+      <div class="card"><h3>Próximos servicios sugeridos</h3><div id="carSugerencias"></div></div>
+      <div class="card"><h3>Historial de servicios y gastos</h3><div id="carHistorial"></div></div>
+      <div class="card">
+        <h3>Fondos de terceros (dinero a reponer)</h3>
+        <div id="fondosTercerosList"></div>
+        <button class="btn btn-secondary" onclick="openNuevoFondoModal()">+ Agregar fondo de un tercero</button>
+      </div>
+      <div class="card">
+        <h3>Préstamos formales (banco, tarjeta como colchón)</h3>
+        <div id="prestamosFormalesList"></div>
+        <button class="btn btn-secondary" onclick="openNuevoPrestamoModal()">+ Agregar préstamo</button>
+      </div>
+      <button class="btn" onclick="openCarroDatosModal()">✎ Editar datos del carro</button>
+      <button class="btn btn-secondary" onclick="openServicioModal()">+ Registrar servicio / gasto del carro</button>
+    </div>
   </div>
 </div>
 
@@ -233,8 +282,36 @@ let db = {
     { id: 1, concepto: 'Vales de despensa', monto: 0, cuando: 'ultimaQuincena', activo: true }
   ],
   retiros: [],
-  config: { sueldoMensual: 36000, porcentajeAhorro: 11, ahorroInicioMes: '2026-01' }
+  config: { sueldoMensual: 36000, porcentajeAhorro: 11, ahorroInicioMes: '2026-01' },
+  carro: {
+    marca: 'Dodge',
+    modelo: 'Attitude GLS',
+    anio: 2010,
+    kmActual: 115000,
+    kmFecha: new Date().toISOString().slice(0,10),
+    servicios: []
+  },
+  fondosTerceros: [
+    { id: 1, nombre: 'Suegra', movimientos: [] }
+  ],
+  prestamosFormales: []
 };
+
+/* Reglas de mantenimiento: intervalo en km y/o meses, lo que ocurra primero.
+   tipo debe existir como valor posible al registrar un servicio. */
+const REGLAS_MANTENIMIENTO = [
+  { tipo: 'Cambio de aceite y filtro', km: 7500, meses: 6 },
+  { tipo: 'Filtro de aire', km: 15000, meses: 12 },
+  { tipo: 'Balatas / frenos', km: 30000, meses: 24 },
+  { tipo: 'Llantas', km: 50000, meses: 48 },
+  { tipo: 'Afinación mayor (bujías, cables)', km: 45000, meses: 36 },
+  { tipo: 'Banda de distribución / accesorios', km: 90000, meses: 72 },
+  { tipo: 'Líquido de frenos', km: 40000, meses: 24 },
+  { tipo: 'Refrigerante / anticongelante', km: 60000, meses: 36 },
+  { tipo: 'Batería', km: null, meses: 36 },
+  { tipo: 'Verificación vehicular', km: null, meses: 6 },
+  { tipo: 'Alineación y balanceo', km: 10000, meses: 12 }
+];
 
 function ymKey(date) { return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0'); }
 function saveLocal() { localStorage.setItem('gastosDB', JSON.stringify(db)); }
@@ -274,6 +351,25 @@ function migrarDatos() {
     db.ingresosRecurrentes = [{ id: 1, concepto: 'Vales de despensa', monto: 0, cuando: 'ultimaQuincena', activo: true }];
     cambiado = true;
   }
+  if (!db.carro) {
+    db.carro = { marca: 'Dodge', modelo: 'Attitude GLS', anio: 2010, kmActual: 115000, kmFecha: new Date().toISOString().slice(0,10), servicios: [] };
+    cambiado = true;
+  }
+  if (!db.carro.servicios) { db.carro.servicios = []; cambiado = true; }
+  if (!db.fondosTerceros) {
+    db.fondosTerceros = [{ id: 1, nombre: 'Suegra', movimientos: [] }];
+    cambiado = true;
+  }
+  (db.carro.servicios || []).forEach(s => {
+    if (s.fuentePago === undefined) { s.fuentePago = 'normal'; cambiado = true; }
+    if (s.fondoId === undefined) { s.fondoId = null; cambiado = true; }
+  });
+  if (!db.prestamosFormales) { db.prestamosFormales = []; cambiado = true; }
+  (db.variables || []).forEach(v => {
+    if (v.fuentePago === undefined) { v.fuentePago = 'normal'; cambiado = true; }
+    if (v.fondoId === undefined) { v.fondoId = null; cambiado = true; }
+    if (v.prestamoId === undefined) { v.prestamoId = null; cambiado = true; }
+  });
   Object.keys(db.tarjetas).forEach(k => {
     (db.tarjetas[k].compras || []).forEach(c => {
       if (c.esVariable === undefined && (c.meses || 1) === 1) { c.esVariable = true; cambiado = true; }
@@ -376,6 +472,7 @@ function switchTab(tab) {
   if (tab === 'fijos') renderFijos();
   if (tab === 'ingresos') renderIngresos();
   if (tab === 'ahorro') renderAhorro();
+  if (tab === 'carro') renderCarro();
   if (tab === 'resumen') renderResumen();
 }
 
@@ -399,6 +496,7 @@ function renderAll() {
   renderVariables();
   renderIngresos();
   renderAhorro();
+  renderCarro();
   const graficasTab = document.getElementById('tab-graficas');
   if (graficasTab && !graficasTab.classList.contains('hidden')) renderGraficas();
 }
@@ -635,6 +733,49 @@ function renderResumen() {
   });
   if (!pendientesHtml) pendientesHtml = '<div class="empty-state">Sin compras pendientes de reflejarse en meses futuros.</div>';
   document.getElementById('pendientesFuturo').innerHTML = pendientesHtml;
+
+  renderDeficitMes(mkVisto, balance);
+}
+
+// Cuánto se cubrió este mes con dinero de terceros (fondos de persona + préstamos formales),
+// contando tanto gastos variables como servicios del carro marcados con esa fuente.
+function calcularCubiertoConTercerosDelMes(mk) {
+  let porFondo = 0, porPrestamo = 0;
+  (db.variables || []).forEach(v => {
+    if (v.mes !== mk) return;
+    if (v.fuentePago === 'fondo') porFondo += v.monto;
+    if (v.fuentePago === 'prestamo') porPrestamo += v.monto;
+  });
+  (db.carro && db.carro.servicios || []).forEach(s => {
+    if ((s.fecha || '').slice(0,7) !== mk) return;
+    if (s.fuentePago === 'fondo') porFondo += s.costo;
+  });
+  return { porFondo, porPrestamo, total: porFondo + porPrestamo };
+}
+
+function renderDeficitMes(mk, balance) {
+  const el = document.getElementById('deficitMesCard');
+  if (!el) return;
+  const cubierto = calcularCubiertoConTercerosDelMes(mk);
+  const huboDeficit = balance < 0;
+  let html = '';
+  if (!huboDeficit && cubierto.total === 0) {
+    html = '<div class="empty-state">Este mes cerró en positivo y sin necesidad de recurrir a terceros. 👍</div>';
+  } else {
+    if (huboDeficit) {
+      html += '<div class="row"><span class="row-label">Déficit del mes (gastos &gt; ingresos)</span><span class="row-amount negative">' + formatMoney(Math.abs(balance)) + '</span></div>';
+    }
+    if (cubierto.porFondo > 0) {
+      html += '<div class="row"><span class="row-label">Cubierto con fondo de persona</span><span class="row-amount warning">' + formatMoney(cubierto.porFondo) + '</span></div>';
+    }
+    if (cubierto.porPrestamo > 0) {
+      html += '<div class="row"><span class="row-label">Cubierto con préstamo formal</span><span class="row-amount warning">' + formatMoney(cubierto.porPrestamo) + '</span></div>';
+    }
+    if (cubierto.total === 0 && huboDeficit) {
+      html += '<div class="row-sub" style="margin-top:6px">Aún no marcas de dónde salió este faltante. Puedes marcarlo al registrar el gasto (fondo o préstamo) para llevar el control.</div>';
+    }
+  }
+  el.innerHTML = html;
 }
 
 function ultimosNMeses(n, mesRef) {
@@ -1059,9 +1200,17 @@ function renderVariables() {
 
   let html = '';
   efectivoItems.forEach(({ v, i }) => {
+    let fuenteBadge = '';
+    if (v.fuentePago === 'fondo') {
+      const f = (db.fondosTerceros || []).find(x => x.id === v.fondoId);
+      fuenteBadge = '<span class="badge fondo" style="margin-left:6px">' + (f ? f.nombre : 'Fondo') + '</span>';
+    } else if (v.fuentePago === 'prestamo') {
+      const p = (db.prestamosFormales || []).find(x => x.id === v.prestamoId);
+      fuenteBadge = '<span class="badge fondo" style="margin-left:6px">' + (p ? p.nombre : 'Préstamo') + '</span>';
+    }
     html += '<div class="card"><div class="row"><div><div class="row-label">' + v.concepto + '</div>' +
       '<div class="row-sub">Comprado el ' + v.fecha + '</div>' +
-      '<span class="metodo-pill metodo-efectivo">Efectivo / débito</span></div>' +
+      '<span class="metodo-pill metodo-efectivo">Efectivo / débito</span>' + fuenteBadge + '</div>' +
       '<span class="row-amount negative">' + formatMoney(v.monto) + '</span></div>' +
       '<button class="btn btn-danger" onclick="deleteVariable(' + i + ')">Eliminar</button></div>';
   });
@@ -1163,13 +1312,24 @@ function saveRetiro() {
   renderAll();
 }
 
-function deleteVariable(i) { db.variables.splice(i, 1); persist(); renderAll(); }
+function deleteVariable(i) {
+  const v = db.variables[i];
+  if (v) {
+    if (v.fuentePago === 'fondo' && v.fondoId) quitarMovimientoFondo(v.fondoId, 'variable-' + i);
+    if (v.fuentePago === 'prestamo' && v.prestamoId) quitarMovimientoPrestamo(v.prestamoId, 'variable-' + i);
+  }
+  db.variables.splice(i, 1);
+  persist();
+  renderAll();
+}
 function deleteIngreso(i) { db.ingresos.splice(i, 1); persist(); renderAll(); }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
 /* --- Formulario unificado de gasto (variable / MSI / 1 exhibición) --- */
 function openGastoModal() {
   const tarjetaOptions = Object.keys(db.tarjetas).map(k => '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>').join('');
+  const fondosOptions = (db.fondosTerceros || []).map(f => '<option value="fondo-' + f.id + '">' + f.nombre + ' (persona)</option>').join('');
+  const prestamosOptions = (db.prestamosFormales || []).map(p => '<option value="prestamo-' + p.id + '">' + p.nombre + ' (préstamo/institución)</option>').join('');
   document.getElementById('modalContent').innerHTML =
     '<button class="close-modal" onclick="closeModal()">×</button>' +
     '<h2>Agregar gasto</h2>' +
@@ -1177,7 +1337,9 @@ function openGastoModal() {
     '<div class="field"><label>Monto</label><input id="uMonto" type="number" placeholder="0.00"></div>' +
     '<div class="field"><label>Fecha</label><input id="uFecha" type="date" value="' + new Date().toISOString().slice(0,10) + '"></div>' +
     '<div class="field"><label>Método de pago</label><select id="uMetodo" onchange="toggleMSIField()">' +
-    '<option value="efectivo">Efectivo / débito (se descuenta de inmediato)</option>' + tarjetaOptions + '</select></div>' +
+    '<option value="efectivo">Efectivo / débito (se descuenta de inmediato)</option>' + tarjetaOptions +
+    (fondosOptions || prestamosOptions ? '<optgroup label="Cubierto con dinero de un tercero">' + fondosOptions + prestamosOptions + '</optgroup>' : '') +
+    '</select></div>' +
     '<div id="msiFieldWrap" class="hidden">' +
     '<div class="field"><label>¿Cómo se paga?</label><select id="uMeses">' +
     '<option value="1">Una sola exhibición</option>' +
@@ -1200,7 +1362,7 @@ function openGastoModal() {
 
 function toggleMSIField() {
   const metodo = document.getElementById('uMetodo').value;
-  document.getElementById('msiFieldWrap').classList.toggle('hidden', metodo === 'efectivo');
+  document.getElementById('msiFieldWrap').classList.toggle('hidden', metodo === 'efectivo' || metodo.indexOf('fondo-') === 0 || metodo.indexOf('prestamo-') === 0);
 }
 
 function saveGastoUnificado() {
@@ -1210,7 +1372,15 @@ function saveGastoUnificado() {
   const metodo = document.getElementById('uMetodo').value;
 
   if (metodo === 'efectivo') {
-    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')), metodo: 'efectivo' });
+    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')), metodo: 'efectivo', fuentePago: 'normal', fondoId: null, prestamoId: null });
+  } else if (metodo.indexOf('fondo-') === 0) {
+    const fondoId = parseInt(metodo.replace('fondo-', ''));
+    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')), metodo: 'efectivo', fuentePago: 'fondo', fondoId, prestamoId: null });
+    agregarMovimientoFondo(fondoId, { refId: 'variable-' + (db.variables.length - 1), tipo: 'gasto', monto: -Math.abs(monto), fecha, concepto: 'Gasto personal: ' + concepto });
+  } else if (metodo.indexOf('prestamo-') === 0) {
+    const prestamoId = parseInt(metodo.replace('prestamo-', ''));
+    db.variables.push({ concepto, monto, fecha, mes: ymKey(new Date(fecha + 'T00:00:00')), metodo: 'efectivo', fuentePago: 'prestamo', fondoId: null, prestamoId });
+    agregarMovimientoPrestamo(prestamoId, { refId: 'variable-' + (db.variables.length - 1), tipo: 'disposicion', monto: Math.abs(monto), fecha, concepto: 'Gasto personal: ' + concepto });
   } else {
     let meses = document.getElementById('uMeses').value;
     if (meses === 'custom') meses = parseInt(document.getElementById('uMesesCustom').value) || 1;
@@ -1350,6 +1520,438 @@ function saveConfig() {
   closeModal();
   renderAll();
 }
+
+/* ================= MÓDULO CARRO ================= */
+
+function diasEntre(f1, f2) { return Math.round((f2 - f1) / (1000*60*60*24)); }
+function mesesEntre(f1, f2) { return (f2.getFullYear()-f1.getFullYear())*12 + (f2.getMonth()-f1.getMonth()); }
+
+// Estima el ritmo de uso (km por mes) usando el km inicial guardado y el km actual
+function kmPorMes() {
+  const c = db.carro;
+  if (!c.kmInicial || !c.kmInicialFecha) return 1200; // valor por defecto razonable
+  const meses = Math.max(1, mesesEntre(new Date(c.kmInicialFecha + 'T00:00:00'), new Date(c.kmFecha + 'T00:00:00')));
+  const kmRecorridos = c.kmActual - c.kmInicial;
+  if (kmRecorridos <= 0) return 1200;
+  return kmRecorridos / meses;
+}
+
+function ultimoServicioDeTipo(tipo) {
+  const servs = (db.carro.servicios || []).filter(s => s.tipo === tipo).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  return servs[0] || null;
+}
+
+function calcularSugerencias() {
+  const c = db.carro;
+  const kmActual = c.kmActual || 0;
+  const hoy = new Date(c.kmFecha + 'T00:00:00');
+  const ritmoKmMes = kmPorMes();
+  const sugerencias = [];
+
+  REGLAS_MANTENIMIENTO.forEach(regla => {
+    const ultimo = ultimoServicioDeTipo(regla.tipo);
+    let kmBase, fechaBase;
+    if (ultimo) {
+      kmBase = ultimo.km;
+      fechaBase = new Date(ultimo.fecha + 'T00:00:00');
+    } else {
+      // Sin historial: asumimos que el intervalo empieza en 0km / año de fabricación
+      kmBase = 0;
+      fechaBase = new Date(c.anio, 0, 1);
+    }
+
+    let kmObjetivo = regla.km !== null ? kmBase + regla.km : null;
+    let mesesObjetivo = regla.meses !== null ? regla.meses : null;
+    let fechaObjetivo = mesesObjetivo !== null ? new Date(fechaBase.getFullYear(), fechaBase.getMonth() + mesesObjetivo, fechaBase.getDate()) : null;
+
+    let kmRestantes = kmObjetivo !== null ? kmObjetivo - kmActual : null;
+    let mesesRestantes = fechaObjetivo !== null ? mesesEntre(hoy, fechaObjetivo) : null;
+
+    // Progreso 0-100% del intervalo consumido (usamos el criterio que esté más avanzado)
+    let progresoKm = (regla.km !== null) ? Math.min(1, Math.max(0, (kmActual - kmBase) / regla.km)) : null;
+    let progresoTiempo = (regla.meses !== null) ? Math.min(1, Math.max(0, mesesEntre(fechaBase, hoy) / regla.meses)) : null;
+    let progreso = Math.max(progresoKm || 0, progresoTiempo || 0);
+
+    let estado = 'ok';
+    if (progreso >= 1) estado = 'urgent';
+    else if (progreso >= 0.8) estado = 'soon';
+
+    sugerencias.push({
+      tipo: regla.tipo, kmObjetivo, fechaObjetivo, kmRestantes, mesesRestantes, progreso, estado,
+      ultimo, kmBase, fechaBase
+    });
+  });
+
+  sugerencias.sort((a,b) => b.progreso - a.progreso);
+  return sugerencias;
+}
+
+function renderCarro() {
+  const heroEl = document.getElementById('carHero');
+  if (!heroEl) return;
+  const c = db.carro;
+  heroEl.innerHTML =
+    '<div class="car-name">' + c.marca + ' ' + c.modelo + ' (' + c.anio + ')</div>' +
+    '<div class="car-sub">Actualizado: ' + (c.kmFecha || '') + '</div>' +
+    '<div class="km-row"><div><div class="km-value">' + Number(c.kmActual||0).toLocaleString('es-MX') + ' km</div><div class="km-label">Kilometraje actual</div></div></div>';
+
+  const sugerencias = calcularSugerencias();
+  const suggEl = document.getElementById('carSugerencias');
+  suggEl.innerHTML = sugerencias.map(s => {
+    const detalle = [];
+    if (s.kmObjetivo !== null) {
+      detalle.push(s.kmRestantes >= 0 ? ('Faltan ~' + Math.round(s.kmRestantes).toLocaleString('es-MX') + ' km') : ('Ya rebasado por ' + Math.round(-s.kmRestantes).toLocaleString('es-MX') + ' km'));
+    }
+    if (s.fechaObjetivo !== null) {
+      const fStr = s.fechaObjetivo.toLocaleDateString('es-MX', { year: 'numeric', month: 'short' });
+      detalle.push(s.mesesRestantes >= 0 ? ('o antes de ' + fStr) : ('venció en ' + fStr));
+    }
+    const baseTxt = s.ultimo ? ('Último: ' + s.ultimo.fecha + ' a los ' + Number(s.ultimo.km||0).toLocaleString('es-MX') + ' km') : 'Sin registro previo (estimado)';
+    return '<div class="suggestion-item ' + (s.estado !== 'ok' ? s.estado : '') + '">' +
+      '<div class="sugg-top"><div class="sugg-name">' + s.tipo + '</div>' +
+      '<span class="badge ' + (s.estado === 'urgent' ? 'urgent' : (s.estado === 'ok' ? 'ok' : '')) + '">' + (s.estado === 'urgent' ? 'Atrasado' : s.estado === 'soon' ? 'Pronto' : 'OK') + '</span></div>' +
+      '<div class="sugg-detail">' + detalle.join(' ') + '</div>' +
+      '<div class="sugg-detail">' + baseTxt + '</div>' +
+      '<div class="progress-bar"><div class="progress-fill ' + (s.estado !== 'ok' ? s.estado : '') + '" style="width:' + Math.round(s.progreso*100) + '%"></div></div>' +
+      '</div>';
+  }).join('') || '<div class="empty-state">Sin datos suficientes</div>';
+
+  const histEl = document.getElementById('carHistorial');
+  const servicios = (db.carro.servicios || []).slice().sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  histEl.innerHTML = servicios.map((s, i) => {
+    const idxReal = db.carro.servicios.indexOf(s);
+    const fondoNombre = s.fuentePago === 'fondo' ? ((db.fondosTerceros || []).find(f => f.id === s.fondoId) || {}).nombre : null;
+    return '<div class="service-item" onclick="openServicioModal(' + idxReal + ')">' +
+      '<div class="service-top"><div class="service-name">' + s.tipo + '</div><div class="service-cost">' + formatMoney(s.costo) + '</div></div>' +
+      '<div class="service-meta">' + s.fecha + ' · ' + Number(s.km||0).toLocaleString('es-MX') + ' km' + (s.taller ? ' · ' + s.taller : '') + '</div>' +
+      (fondoNombre ? '<span class="badge fondo" style="margin-top:6px;display:inline-block">Fondo: ' + fondoNombre + '</span>' : '') +
+      (s.notas ? '<div class="service-meta">' + s.notas + '</div>' : '') +
+      '</div>';
+  }).join('') || '<div class="empty-state">Sin servicios registrados aún</div>';
+
+  renderFondosTerceros();
+  renderPrestamosFormales();
+}
+
+function openCarroDatosModal() {
+  const c = db.carro;
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Datos del carro</h2>' +
+    '<div class="field-row">' +
+    '<div class="field"><label>Marca</label><input id="carMarca" value="' + c.marca + '"></div>' +
+    '<div class="field"><label>Modelo</label><input id="carModelo" value="' + c.modelo + '"></div>' +
+    '</div>' +
+    '<div class="field"><label>Año</label><input id="carAnio" type="number" value="' + c.anio + '"></div>' +
+    '<div class="field"><label>Kilometraje actual</label><input id="carKm" type="number" value="' + c.kmActual + '"></div>' +
+    '<div class="field"><label>Fecha de esta lectura de km</label><input id="carKmFecha" type="date" value="' + c.kmFecha + '"></div>' +
+    '<p class="row-sub" style="margin-bottom:12px">Cada vez que actualices el km aquí, la app recalcula el ritmo de uso (km/mes) para mejorar las sugerencias.</p>' +
+    '<button class="btn" onclick="saveCarroDatos()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveCarroDatos() {
+  const c = db.carro;
+  const nuevoKm = parseFloat(document.getElementById('carKm').value) || c.kmActual;
+  const nuevaFecha = document.getElementById('carKmFecha').value || c.kmFecha;
+  // Guardamos el primer punto de referencia si no existe, para poder calcular ritmo de uso
+  if (!c.kmInicial) { c.kmInicial = c.kmActual; c.kmInicialFecha = c.kmFecha; }
+  c.marca = document.getElementById('carMarca').value || c.marca;
+  c.modelo = document.getElementById('carModelo').value || c.modelo;
+  c.anio = parseInt(document.getElementById('carAnio').value) || c.anio;
+  c.kmActual = nuevoKm;
+  c.kmFecha = nuevaFecha;
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function openServicioModal(indexEditar) {
+  const editando = indexEditar !== undefined;
+  const s = editando ? db.carro.servicios[indexEditar] : null;
+  const tiposOptions = REGLAS_MANTENIMIENTO.map(r => r.tipo)
+    .concat(['Gasolina', 'Verificación / Tenencia', 'Seguro', 'Refacción / Reparación', 'Otro'])
+    .map(t => '<option value="' + t + '"' + (s && s.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('');
+  const fuenteActual = s ? (s.fuentePago || 'normal') : 'normal';
+  const fondosOptions = (db.fondosTerceros || []).map(f =>
+    '<option value="' + f.id + '"' + (s && s.fondoId === f.id ? ' selected' : '') + '>' + f.nombre + '</option>'
+  ).join('');
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>' + (editando ? 'Editar servicio / gasto' : 'Registrar servicio / gasto del carro') + '</h2>' +
+    '<div class="field"><label>Tipo</label><select id="servTipo">' + tiposOptions + '</select></div>' +
+    '<div class="field-row">' +
+    '<div class="field"><label>Fecha</label><input id="servFecha" type="date" value="' + (s ? s.fecha : new Date().toISOString().slice(0,10)) + '"></div>' +
+    '<div class="field"><label>Km al momento</label><input id="servKm" type="number" value="' + (s ? s.km : db.carro.kmActual) + '"></div>' +
+    '</div>' +
+    '<div class="field"><label>Costo</label><input id="servCosto" type="number" placeholder="0.00" value="' + (s ? s.costo : '') + '"></div>' +
+    '<div class="field"><label>¿De dónde salió el dinero?</label><select id="servFuente" onchange="toggleFondoWrap()">' +
+    '<option value="normal"' + (fuenteActual === 'normal' ? ' selected' : '') + '>Gasto normal (efectivo/tarjeta propia)</option>' +
+    '<option value="fondo"' + (fuenteActual === 'fondo' ? ' selected' : '') + '>Fondo de un tercero (hay que reponerlo)</option>' +
+    '</select></div>' +
+    '<div class="field' + (fuenteActual === 'fondo' ? '' : ' hidden') + '" id="servFondoWrap">' +
+    '<label>¿Qué fondo?</label><select id="servFondoId">' + fondosOptions + '</select>' +
+    '<p class="row-sub" style="margin-top:4px">Este monto se descuenta del fondo y queda marcado como pendiente de reponer.</p></div>' +
+    '<div class="field"><label>Taller / lugar (opcional)</label><input id="servTaller" value="' + (s && s.taller ? s.taller : '') + '"></div>' +
+    '<div class="field"><label>Qué se cambió / notas (opcional)</label><input id="servNotas" placeholder="Ej. Balatas delanteras y traseras, disco izq." value="' + (s && s.notas ? s.notas : '') + '"></div>' +
+    '<button class="btn" onclick="saveServicio(' + (editando ? indexEditar : 'undefined') + ')">Guardar</button>' +
+    (editando ? '<button class="btn btn-danger" onclick="deleteServicio(' + indexEditar + ')">Eliminar</button>' : '');
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function toggleFondoWrap() {
+  const fuente = document.getElementById('servFuente').value;
+  document.getElementById('servFondoWrap').classList.toggle('hidden', fuente !== 'fondo');
+}
+
+function saveServicio(indexEditar) {
+  const tipo = document.getElementById('servTipo').value;
+  const fecha = document.getElementById('servFecha').value || new Date().toISOString().slice(0,10);
+  const km = parseFloat(document.getElementById('servKm').value) || 0;
+  const costo = parseFloat(document.getElementById('servCosto').value) || 0;
+  const taller = document.getElementById('servTaller').value;
+  const notas = document.getElementById('servNotas').value;
+  const fuentePago = document.getElementById('servFuente').value;
+  const fondoId = fuentePago === 'fondo' ? parseInt(document.getElementById('servFondoId').value) : null;
+
+  // Si estamos editando y el servicio anterior ya había generado un movimiento en un fondo, lo revertimos primero
+  if (indexEditar !== undefined) {
+    const anterior = db.carro.servicios[indexEditar];
+    if (anterior && anterior.fuentePago === 'fondo' && anterior.fondoId) {
+      quitarMovimientoFondo(anterior.fondoId, 'servicio-' + indexEditar);
+    }
+  }
+
+  const nuevo = { tipo, fecha, km, costo, taller, notas, fuentePago, fondoId };
+  let idxUsado;
+  if (indexEditar !== undefined) {
+    db.carro.servicios[indexEditar] = nuevo;
+    idxUsado = indexEditar;
+  } else {
+    db.carro.servicios.push(nuevo);
+    idxUsado = db.carro.servicios.length - 1;
+  }
+
+  // Si se paga con fondo de terceros, registrar el retiro (gasto) en ese fondo
+  if (fuentePago === 'fondo' && fondoId) {
+    agregarMovimientoFondo(fondoId, {
+      refId: 'servicio-' + idxUsado,
+      tipo: 'gasto',
+      monto: -Math.abs(costo),
+      fecha,
+      concepto: 'Gasto carro: ' + tipo
+    });
+  }
+
+  // Si el km del servicio es mayor al km actual guardado, actualizamos el odómetro
+  if (km > (db.carro.kmActual || 0)) {
+    if (!db.carro.kmInicial) { db.carro.kmInicial = db.carro.kmActual; db.carro.kmInicialFecha = db.carro.kmFecha; }
+    db.carro.kmActual = km;
+    db.carro.kmFecha = fecha;
+  }
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function deleteServicio(index) {
+  const s = db.carro.servicios[index];
+  if (s && s.fuentePago === 'fondo' && s.fondoId) {
+    quitarMovimientoFondo(s.fondoId, 'servicio-' + index);
+  }
+  db.carro.servicios.splice(index, 1);
+  persist();
+  closeModal();
+  renderAll();
+}
+
+/* ================= FONDOS DE TERCEROS ================= */
+
+function agregarMovimientoFondo(fondoId, mov) {
+  const fondo = (db.fondosTerceros || []).find(f => f.id === fondoId);
+  if (!fondo) return;
+  if (!fondo.movimientos) fondo.movimientos = [];
+  fondo.movimientos.push(mov);
+}
+
+function quitarMovimientoFondo(fondoId, refId) {
+  const fondo = (db.fondosTerceros || []).find(f => f.id === fondoId);
+  if (!fondo || !fondo.movimientos) return;
+  fondo.movimientos = fondo.movimientos.filter(m => m.refId !== refId);
+}
+
+function saldoFondo(fondo) {
+  return (fondo.movimientos || []).reduce((acc, m) => acc + m.monto, 0);
+}
+
+function deudaCarroFondo(fondoId) {
+  // Suma de gastos del carro pagados con este fondo que aún no se han "repuesto" explícitamente vía depósito
+  // La forma más simple y transparente: la deuda pendiente = saldo negativo actual del fondo (si el saldo es negativo, se debe reponer esa cantidad)
+  const fondo = (db.fondosTerceros || []).find(f => f.id === fondoId);
+  if (!fondo) return 0;
+  const saldo = saldoFondo(fondo);
+  return saldo < 0 ? -saldo : 0;
+}
+
+function renderFondosTerceros() {
+  const el = document.getElementById('fondosTercerosList');
+  if (!el) return;
+  el.innerHTML = (db.fondosTerceros || []).map(f => {
+    const saldo = saldoFondo(f);
+    const debe = saldo < 0;
+    const movs = (f.movimientos || []).slice().sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+    const movsHtml = movs.map(m =>
+      '<div class="movimiento-item"><span>' + m.fecha + ' · ' + m.concepto + '</span>' +
+      '<span class="' + (m.monto < 0 ? 'negative' : 'positive') + '">' + (m.monto < 0 ? '-' : '+') + formatMoney(Math.abs(m.monto)) + '</span></div>'
+    ).join('') || '<div class="empty-state">Sin movimientos</div>';
+    return '<div class="fondo-item">' +
+      '<div class="fondo-top"><div class="fondo-name">' + f.nombre + '</div>' +
+      '<div class="fondo-saldo ' + (debe ? 'negative' : 'positive') + '">' + (debe ? '-' : '') + formatMoney(Math.abs(saldo)) + '</div></div>' +
+      '<div class="fondo-meta">' + (debe ? 'Pendiente de reponer' : 'Saldo a favor / sin deuda') + '</div>' +
+      '<div style="margin-top:10px">' + movsHtml + '</div>' +
+      '<div class="btn-row">' +
+      '<button class="btn btn-secondary" onclick="openDepositoFondoModal(' + f.id + ')">+ Registrar reposición</button>' +
+      '</div></div>';
+  }).join('') || '<div class="empty-state">Sin fondos registrados</div>';
+}
+
+function openNuevoFondoModal() {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Agregar fondo de un tercero</h2>' +
+    '<div class="field"><label>Nombre (ej. "Suegra", "Papá")</label><input id="fondoNombre" placeholder="Nombre"></div>' +
+    '<button class="btn" onclick="saveNuevoFondo()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveNuevoFondo() {
+  const nombre = document.getElementById('fondoNombre').value || 'Fondo';
+  if (!db.fondosTerceros) db.fondosTerceros = [];
+  db.fondosTerceros.push({ id: Date.now(), nombre, movimientos: [] });
+  persist();
+  closeModal();
+  renderAll();
+}
+
+/* ================= PRÉSTAMOS FORMALES (banco, tarjeta externa, institución) ================= */
+
+function agregarMovimientoPrestamo(prestamoId, mov) {
+  const p = (db.prestamosFormales || []).find(x => x.id === prestamoId);
+  if (!p) return;
+  if (!p.movimientos) p.movimientos = [];
+  p.movimientos.push(mov);
+}
+
+function quitarMovimientoPrestamo(prestamoId, refId) {
+  const p = (db.prestamosFormales || []).find(x => x.id === prestamoId);
+  if (!p || !p.movimientos) return;
+  p.movimientos = p.movimientos.filter(m => m.refId !== refId);
+}
+
+function saldoPrestamo(p) {
+  // disposiciones suman deuda, abonos la restan
+  return (p.movimientos || []).reduce((acc, m) => acc + (m.tipo === 'abono' ? -m.monto : m.monto), 0);
+}
+
+function renderPrestamosFormales() {
+  const el = document.getElementById('prestamosFormalesList');
+  if (!el) return;
+  el.innerHTML = (db.prestamosFormales || []).map(p => {
+    const saldo = saldoPrestamo(p);
+    const movs = (p.movimientos || []).slice().sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+    const movsHtml = movs.map(m =>
+      '<div class="movimiento-item"><span>' + m.fecha + ' · ' + m.concepto + '</span>' +
+      '<span class="' + (m.tipo === 'abono' ? 'positive' : 'negative') + '">' + (m.tipo === 'abono' ? '-' : '+') + formatMoney(Math.abs(m.monto)) + '</span></div>'
+    ).join('') || '<div class="empty-state">Sin movimientos</div>';
+    const tasaTxt = p.tasaInteres ? (p.tasaInteres + '% anual') : 'Sin interés registrado';
+    const limiteTxt = p.fechaLimite ? ('Próximo pago límite: ' + p.fechaLimite) : '';
+    return '<div class="fondo-item">' +
+      '<div class="fondo-top"><div class="fondo-name">' + p.nombre + '</div>' +
+      '<div class="fondo-saldo ' + (saldo > 0 ? 'negative' : 'positive') + '">' + formatMoney(Math.abs(saldo)) + '</div></div>' +
+      '<div class="fondo-meta">' + tasaTxt + (limiteTxt ? ' · ' + limiteTxt : '') + '</div>' +
+      '<div style="margin-top:10px">' + movsHtml + '</div>' +
+      '<div class="btn-row">' +
+      '<button class="btn btn-secondary" onclick="openAbonoPrestamoModal(' + p.id + ')">+ Registrar abono</button>' +
+      '</div></div>';
+  }).join('') || '<div class="empty-state">Sin préstamos registrados</div>';
+}
+
+function openNuevoPrestamoModal() {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Agregar préstamo / institución</h2>' +
+    '<div class="field"><label>Nombre (ej. "BBVA - Préstamo personal", "Tarjeta Nu usada como colchón")</label><input id="prestNombre" placeholder="Nombre"></div>' +
+    '<div class="field"><label>Tasa de interés anual (opcional, %)</label><input id="prestTasa" type="number" placeholder="Ej. 45"></div>' +
+    '<div class="field"><label>Fecha límite de pago (opcional)</label><input id="prestFechaLimite" type="date"></div>' +
+    '<button class="btn" onclick="saveNuevoPrestamo()">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveNuevoPrestamo() {
+  const nombre = document.getElementById('prestNombre').value || 'Préstamo';
+  const tasaInteres = parseFloat(document.getElementById('prestTasa').value) || null;
+  const fechaLimite = document.getElementById('prestFechaLimite').value || null;
+  if (!db.prestamosFormales) db.prestamosFormales = [];
+  db.prestamosFormales.push({ id: Date.now(), nombre, tasaInteres, fechaLimite, movimientos: [] });
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function openAbonoPrestamoModal(prestamoId) {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Registrar abono al préstamo</h2>' +
+    '<div class="field"><label>Monto que abonas</label><input id="abMonto" type="number" placeholder="0.00"></div>' +
+    '<div class="field"><label>Fecha</label><input id="abFecha" type="date" value="' + new Date().toISOString().slice(0,10) + '"></div>' +
+    '<div class="field"><label>Nota (opcional)</label><input id="abNota" placeholder="Ej. Abono de mi quincena"></div>' +
+    '<button class="btn" onclick="saveAbonoPrestamo(' + prestamoId + ')">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveAbonoPrestamo(prestamoId) {
+  const monto = parseFloat(document.getElementById('abMonto').value) || 0;
+  const fecha = document.getElementById('abFecha').value || new Date().toISOString().slice(0,10);
+  const nota = document.getElementById('abNota').value;
+  agregarMovimientoPrestamo(prestamoId, {
+    refId: 'abono-' + Date.now(),
+    tipo: 'abono',
+    monto: Math.abs(monto),
+    fecha,
+    concepto: nota || 'Abono al préstamo'
+  });
+  persist();
+  closeModal();
+  renderAll();
+}
+
+function openDepositoFondoModal(fondoId) {
+  document.getElementById('modalContent').innerHTML =
+    '<button class="close-modal" onclick="closeModal()">×</button>' +
+    '<h2>Registrar reposición al fondo</h2>' +
+    '<div class="field"><label>Monto que repones</label><input id="depMonto" type="number" placeholder="0.00"></div>' +
+    '<div class="field"><label>Fecha</label><input id="depFecha" type="date" value="' + new Date().toISOString().slice(0,10) + '"></div>' +
+    '<div class="field"><label>Nota (opcional)</label><input id="depNota" placeholder="Ej. Repuesto de mi quincena"></div>' +
+    '<button class="btn" onclick="saveDepositoFondo(' + fondoId + ')">Guardar</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveDepositoFondo(fondoId) {
+  const monto = parseFloat(document.getElementById('depMonto').value) || 0;
+  const fecha = document.getElementById('depFecha').value || new Date().toISOString().slice(0,10);
+  const nota = document.getElementById('depNota').value;
+  agregarMovimientoFondo(fondoId, {
+    refId: 'reposicion-' + Date.now(),
+    tipo: 'reposicion',
+    monto: Math.abs(monto),
+    fecha,
+    concepto: nota || 'Reposición al fondo'
+  });
+  persist();
+  closeModal();
+  renderAll();
+}
 </script>
+
 </body>
 </html>

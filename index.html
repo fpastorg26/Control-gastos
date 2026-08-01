@@ -187,23 +187,54 @@
     </div>
 
     <div id="tab-tarjetas" class="tab-content hidden">
+      <div class="field-row" style="margin-bottom:12px">
+        <div class="field">
+          <label>Buscar por concepto</label>
+          <input id="buscarTarjetas" placeholder="Ej. Amazon, Cine..." oninput="renderTarjetas()">
+        </div>
+        <div class="field">
+          <label>Filtrar por tarjeta</label>
+          <select id="filtroTarjeta" onchange="renderTarjetas()">
+            <option value="todas">Todas</option>
+          </select>
+        </div>
+      </div>
       <div id="tarjetasList"></div>
       <button class="btn" onclick="openNuevaTarjetaModal()">+ Agregar tarjeta</button>
     </div>
 
     <div id="tab-fijos" class="tab-content hidden">
-      <div class="field" style="margin-bottom:12px">
-        <label>Filtrar por método de pago</label>
-        <select id="filtroMetodoFijos" onchange="renderFijos()">
-          <option value="todos">Todos</option>
-          <option value="efectivo">Efectivo / débito</option>
-        </select>
+      <div class="field-row" style="margin-bottom:12px">
+        <div class="field">
+          <label>Buscar por concepto</label>
+          <input id="buscarFijos" placeholder="Ej. Netflix, Renta..." oninput="renderFijos()">
+        </div>
+        <div class="field">
+          <label>Filtrar por método de pago</label>
+          <select id="filtroMetodoFijos" onchange="renderFijos()">
+            <option value="todos">Todos</option>
+            <option value="efectivo">Efectivo / débito</option>
+          </select>
+        </div>
       </div>
       <div id="fijosList"></div>
       <button class="btn" onclick="openGastoFijoModal()">+ Agregar gasto fijo</button>
     </div>
 
     <div id="tab-variables" class="tab-content hidden">
+      <div class="field-row" style="margin-bottom:12px">
+        <div class="field">
+          <label>Buscar por concepto</label>
+          <input id="buscarVariables" placeholder="Ej. Super, Gasolina..." oninput="renderVariables()">
+        </div>
+        <div class="field">
+          <label>Filtrar por método de pago</label>
+          <select id="filtroMetodoVariables" onchange="renderVariables()">
+            <option value="todos">Todos</option>
+            <option value="efectivo">Efectivo / débito</option>
+          </select>
+        </div>
+      </div>
       <div id="variablesList"></div>
     </div>
 
@@ -314,16 +345,29 @@ let db = {
 const REGLAS_MANTENIMIENTO = [
   { tipo: 'Cambio de aceite y filtro', km: 7500, meses: 6 },
   { tipo: 'Filtro de aire', km: 15000, meses: 12 },
-  { tipo: 'Balatas / frenos', km: 30000, meses: 24 },
-  { tipo: 'Llantas', km: 50000, meses: 48 },
-  { tipo: 'Afinación mayor (bujías, cables)', km: 45000, meses: 36 },
+  { tipo: 'Balatas / frenos', km: 30000, meses: 24, componentes: ['Delantera', 'Trasera'] },
+  { tipo: 'Llantas', km: 50000, meses: 48, componentes: ['Delantera izquierda', 'Delantera derecha', 'Trasera izquierda', 'Trasera derecha'] },
+  { tipo: 'Bujías', km: 45000, meses: 36 },
+  { tipo: 'Cables de bujía', km: 45000, meses: 36 },
+  { tipo: 'Filtro de combustible', km: 40000, meses: 36 },
   { tipo: 'Banda de distribución / accesorios', km: 90000, meses: 72 },
   { tipo: 'Líquido de frenos', km: 40000, meses: 24 },
   { tipo: 'Refrigerante / anticongelante', km: 60000, meses: 36 },
   { tipo: 'Batería', km: null, meses: 36 },
   { tipo: 'Verificación vehicular', km: null, meses: 6 },
-  { tipo: 'Alineación y balanceo', km: 10000, meses: 12 }
+  { tipo: 'Alineación y balanceo', km: 10000, meses: 12 },
+  { tipo: 'Amortiguadores', km: 60000, meses: 48, componentes: ['Delantero', 'Trasero'] }
 ];
+
+/* Construye el identificador único de seguimiento para un tipo + componente opcional.
+   Si no hay componente, el identificador es el tipo tal cual (comportamiento igual que antes). */
+function idSeguimiento(tipo, componente) {
+  return componente ? (tipo + ': ' + componente) : tipo;
+}
+
+function reglaDeTipo(tipo) {
+  return REGLAS_MANTENIMIENTO.find(r => r.tipo === tipo);
+}
 
 function ymKey(date) { return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0'); }
 
@@ -387,6 +431,9 @@ function migrarDatos() {
       if (s.fuentePago === undefined) { s.fuentePago = 'normal'; cambiado = true; }
       if (s.fondoId === undefined) { s.fondoId = null; cambiado = true; }
       if (s.manoObra === undefined) { s.manoObra = s.costo || 0; s.materiales = 0; cambiado = true; }
+      if (!s.tipos) { s.tipos = s.tipo ? [s.tipo] : ['Otro']; s.otroConcepto = ''; cambiado = true; }
+      if (!s.items) { s.items = s.tipos.map(t => ({ tipo: t, componentes: null })); cambiado = true; }
+      if (s.kmEsEstimado === undefined) { s.kmEsEstimado = false; cambiado = true; }
     });
   });
   if (!db.prestamosFormales) { db.prestamosFormales = []; cambiado = true; }
@@ -861,18 +908,16 @@ function renderResumen() {
   renderDeficitMes(mkVisto, balance);
 }
 
-// Cuánto se cubrió este mes con dinero de terceros (fondos de persona + préstamos formales),
-// contando tanto gastos variables como servicios del carro marcados con esa fuente.
+// Cuánto se cubrió este mes con dinero de terceros (fondos de persona + préstamos formales).
+// Solo contamos gastos que sí forman parte del balance de este resumen (gastos variables generales).
+// Los gastos del carro tienen su propio control en la sección Carro y no se mezclan aquí,
+// porque no están incluidos en el cálculo de ingresos/gastos/balance de este resumen.
 function calcularCubiertoConTercerosDelMes(mk) {
   let porFondo = 0, porPrestamo = 0;
   (db.variables || []).forEach(v => {
     if (v.mes !== mk) return;
     if (v.fuentePago === 'fondo') porFondo += v.monto;
     if (v.fuentePago === 'prestamo') porPrestamo += v.monto;
-  });
-  (carroActivo() && carroActivo().servicios || []).forEach(s => {
-    if ((s.fecha || '').slice(0,7) !== mk) return;
-    if (s.fuentePago === 'fondo') porFondo += s.costo;
   });
   return { porFondo, porPrestamo, total: porFondo + porPrestamo };
 }
@@ -1036,8 +1081,22 @@ function renderGraficas() {
 }
 
 function renderTarjetas() {
+  const filtroTarjetaSelect = document.getElementById('filtroTarjeta');
+  if (filtroTarjetaSelect) {
+    const valorPrevio = filtroTarjetaSelect.value;
+    let opciones = '<option value="todas">Todas</option>';
+    Object.keys(db.tarjetas).forEach(k => { opciones += '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>'; });
+    filtroTarjetaSelect.innerHTML = opciones;
+    if ([...filtroTarjetaSelect.options].some(o => o.value === valorPrevio)) filtroTarjetaSelect.value = valorPrevio;
+  }
+  const filtroTarjetaKey = filtroTarjetaSelect ? filtroTarjetaSelect.value : 'todas';
+  const buscarInput = document.getElementById('buscarTarjetas');
+  const busqueda = buscarInput ? buscarInput.value.trim().toLowerCase() : '';
+
   let html = '';
-  Object.keys(db.tarjetas).forEach(key => {
+  Object.keys(db.tarjetas)
+    .filter(key => filtroTarjetaKey === 'todas' || key === filtroTarjetaKey)
+    .forEach(key => {
     const t = db.tarjetas[key];
     const totalCompras = totalTarjetaMesPago(key, currentDate);
     const fijosDeEstaTarjeta = fijosQueAplicanEnMesPago(currentDate).filter(({ fijo }) => (fijo.metodo || 'efectivo') === key);
@@ -1055,9 +1114,10 @@ function renderTarjetas() {
       '<button class="btn btn-danger" style="margin-top:0" onclick="eliminarTarjeta(\'' + key + '\')">Eliminar tarjeta</button>' +
       '</div>';
 
-    if (fijosDeEstaTarjeta.length > 0) {
+    const fijosFiltrados = busqueda ? fijosDeEstaTarjeta.filter(({ fijo }) => fijo.nombre.toLowerCase().includes(busqueda)) : fijosDeEstaTarjeta;
+    if (fijosFiltrados.length > 0) {
       html += '<div class="row-sub" style="margin:8px 0 4px">Gastos fijos con esta tarjeta:</div>';
-      fijosDeEstaTarjeta.forEach(({ fijo, mesNatural }) => {
+      fijosFiltrados.forEach(({ fijo, mesNatural }) => {
         const montoMostrar = fijo.frecuencia === 'quincenal' ? Number(fijo.monto) * ((fijo.quincenaEspecifica || 'ambas') === 'ambas' ? 2 : 1) : Number(fijo.monto);
         const mesReciboTxt = MESES[mesNatural.getMonth()] + ' ' + mesNatural.getFullYear();
         html += '<div class="msi-item"><strong>' + fijo.nombre + '</strong> <span class="badge">Fijo</span><br>' +
@@ -1076,9 +1136,10 @@ function renderTarjetas() {
           const idx = mesesTranscurridos(mesPago, currentDate);
           const meses = c.meses || 1;
           return idx < meses; // oculta las ya liquidadas (idx >= meses), muestra activas y futuras
-        });
+        })
+        .filter(({ c }) => !busqueda || c.concepto.toLowerCase().includes(busqueda));
       if (comprasVisibles.length === 0) {
-        html += '<div class="empty-state" style="margin-top:8px">Sin compras activas o pendientes este mes.</div>';
+        html += '<div class="empty-state" style="margin-top:8px">Sin compras activas o pendientes' + (busqueda ? ' que coincidan con la búsqueda' : ' este mes') + '.</div>';
       } else {
         html += '<div class="row-sub" style="margin:12px 0 4px">Compras / MSI:</div>';
         comprasVisibles.forEach(({ c, i }) => {
@@ -1223,14 +1284,17 @@ function renderFijos() {
     if ([...filtroSelect.options].some(o => o.value === valorPrevio)) filtroSelect.value = valorPrevio;
   }
   const filtroMetodo = filtroSelect ? filtroSelect.value : 'todos';
+  const buscarInputFijos = document.getElementById('buscarFijos');
+  const busquedaFijos = buscarInputFijos ? buscarInputFijos.value.trim().toLowerCase() : '';
 
   const visibles = db.fijos
     .map((f, i) => ({ f, i }))
     .filter(({ f }) => fijoAplicaEnMesNatural(f, currentDate))
-    .filter(({ f }) => filtroMetodo === 'todos' || (f.metodo || 'efectivo') === filtroMetodo);
+    .filter(({ f }) => filtroMetodo === 'todos' || (f.metodo || 'efectivo') === filtroMetodo)
+    .filter(({ f }) => !busquedaFijos || f.nombre.toLowerCase().includes(busquedaFijos));
 
   if (visibles.length === 0) {
-    document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos que apliquen este mes' + (filtroMetodo !== 'todos' ? ' con ese método de pago' : '') + '.</div>';
+    document.getElementById('fijosList').innerHTML = '<div class="empty-state">Sin gastos fijos que apliquen este mes' + (filtroMetodo !== 'todos' || busquedaFijos ? ' con esos filtros' : '') + '.</div>';
     return;
   }
   const mesVistoTxt = MESES[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
@@ -1303,22 +1367,38 @@ function confirmDeleteFijo(i) {
 
 function renderVariables() {
   const mk = ymKey(currentDate);
+  const filtroMetodoSelect = document.getElementById('filtroMetodoVariables');
+  if (filtroMetodoSelect) {
+    const valorPrevio = filtroMetodoSelect.value;
+    let opciones = '<option value="todos">Todos</option><option value="efectivo">Efectivo / débito</option>';
+    Object.keys(db.tarjetas).forEach(k => { opciones += '<option value="' + k + '">' + db.tarjetas[k].nombre + '</option>'; });
+    filtroMetodoSelect.innerHTML = opciones;
+    if ([...filtroMetodoSelect.options].some(o => o.value === valorPrevio)) filtroMetodoSelect.value = valorPrevio;
+  }
+  const filtroMetodoVar = filtroMetodoSelect ? filtroMetodoSelect.value : 'todos';
+  const buscarInputVar = document.getElementById('buscarVariables');
+  const busquedaVar = buscarInputVar ? buscarInputVar.value.trim().toLowerCase() : '';
+
   const efectivoItems = db.variables
     .map((v, i) => ({ v, i, tipo: 'efectivo' }))
-    .filter(({ v }) => v.mes === mk);
+    .filter(({ v }) => v.mes === mk)
+    .filter(() => filtroMetodoVar === 'todos' || filtroMetodoVar === 'efectivo')
+    .filter(({ v }) => !busquedaVar || v.concepto.toLowerCase().includes(busquedaVar));
 
   const tarjetaItems = [];
   Object.keys(db.tarjetas).forEach(key => {
+    if (filtroMetodoVar !== 'todos' && filtroMetodoVar !== key) return;
     db.tarjetas[key].compras.forEach((c, i) => {
       if (!c.esVariable) return;
       const mesCompra = (c.fecha || '').slice(0, 7); // 'YYYY-MM' directo del string, sin pasar por Date
       if (mesCompra !== mk) return;
+      if (busquedaVar && !c.concepto.toLowerCase().includes(busquedaVar)) return;
       tarjetaItems.push({ c, i, tarjetaKey: key, tipo: 'tarjeta' });
     });
   });
 
   if (efectivoItems.length === 0 && tarjetaItems.length === 0) {
-    document.getElementById('variablesList').innerHTML = '<div class="empty-state">Sin gastos variables este mes.</div>';
+    document.getElementById('variablesList').innerHTML = '<div class="empty-state">Sin gastos variables este mes' + (busquedaVar || filtroMetodoVar !== 'todos' ? ' con esos filtros' : '') + '.</div>';
     return;
   }
 
@@ -1386,19 +1466,15 @@ function renderAhorro() {
   const aporteMensual = aporteQuincenalTotal * 2; // 2 quincenas por mes
   const mkActual = ymKey(currentDate);
   const idxActual = mesKeyToIndex(mkActual);
-  let ultimoRetiro = null;
-  db.retiros.forEach(r => {
-    if (!ultimoRetiro || mesKeyToIndex(r.mes) > mesKeyToIndex(ultimoRetiro.mes)) {
-      if (mesKeyToIndex(r.mes) <= idxActual) ultimoRetiro = r;
-    }
-  });
-  let mesInicioConteo = db.config.ahorroInicioMes || mkActual;
-  if (ultimoRetiro) mesInicioConteo = ultimoRetiro.mes;
+  const mesInicioConteo = db.config.ahorroInicioMes || mkActual;
   const idxInicio = mesKeyToIndex(mesInicioConteo);
-  const mesesAcumulados = Math.max(0, idxActual - idxInicio + (ultimoRetiro ? 0 : 1));
-  const acumulado = mesesAcumulados * aporteMensual;
+  const mesesAcumulados = Math.max(0, idxActual - idxInicio + 1);
+  const totalAportado = mesesAcumulados * aporteMensual;
+  // Solo contamos retiros hasta el mes que se está viendo, para que el acumulado histórico sea correcto
+  const totalRetirado = db.retiros.filter(r => mesKeyToIndex(r.mes) <= idxActual).reduce((acc, r) => acc + (r.monto || 0), 0);
+  const acumulado = Math.max(0, totalAportado - totalRetirado);
   document.getElementById('ahorroAcumulado').textContent = formatMoney(acumulado);
-  document.getElementById('ahorroDetalle').textContent = 'Aportación quincenal (tú): ' + formatMoney(aporteQuincenalPropio) + ' · Con aportación de la empresa: ' + formatMoney(aporteQuincenalTotal) + ' por quincena · Acumulando desde ' + mesInicioConteo + ' (' + mesesAcumulados + ' meses contados a este mes)';
+  document.getElementById('ahorroDetalle').textContent = 'Aportación quincenal (tú): ' + formatMoney(aporteQuincenalPropio) + ' · Con aportación de la empresa: ' + formatMoney(aporteQuincenalTotal) + ' por quincena · Acumulando desde ' + mesInicioConteo + ' (' + mesesAcumulados + ' meses)' + (totalRetirado > 0 ? ' · Retirado a la fecha: ' + formatMoney(totalRetirado) : '');
   if (db.retiros.length === 0) {
     document.getElementById('retirosList').innerHTML = '<div class="empty-state">Sin retiros registrados.</div>';
   } else {
@@ -1418,7 +1494,7 @@ function openRetiroModal() {
   document.getElementById('modalContent').innerHTML =
     '<button class="close-modal" onclick="closeModal()">×</button>' +
     '<h2>Registrar retiro del fondo</h2>' +
-    '<p class="row-sub" style="margin-bottom:12px">A partir del mes que elijas, el acumulado informativo volverá a contarse desde cero.</p>' +
+    '<p class="row-sub" style="margin-bottom:12px">El monto que pongas se descuenta del acumulado; el resto sigue contando con normalidad.</p>' +
     '<div class="field"><label>Monto retirado</label><input id="rMonto" type="number" placeholder="0.00"></div>' +
     '<div class="field"><label>Mes del retiro</label><input id="rMes" type="month" value="' + ymKey(currentDate) + '"></div>' +
     '<div class="field"><label>Nota (opcional)</label><input id="rNota" placeholder="Ej. Retiro para enganche"></div>' +
@@ -1660,8 +1736,72 @@ function kmPorMes() {
   return kmRecorridos / meses;
 }
 
-function ultimoServicioDeTipo(tipo) {
-  const servs = (carroActivo().servicios || []).filter(s => s.tipo === tipo).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+// Reúne todos los puntos de referencia con km REAL conocido (no estimado), ordenados por fecha:
+// la toma de posesión, el km actual del carro, y cualquier servicio donde el km fue capturado (no estimado).
+function puntosKmReales() {
+  const c = carroActivo();
+  const puntos = [];
+  if (c.kmTomaPosesion !== null && c.kmTomaPosesion !== undefined && c.fechaTomaPosesion) {
+    puntos.push({ fecha: new Date(c.fechaTomaPosesion + 'T00:00:00'), km: c.kmTomaPosesion });
+  }
+  (c.servicios || []).forEach(s => {
+    if (!s.kmEsEstimado) {
+      puntos.push({ fecha: new Date(s.fecha + 'T00:00:00'), km: s.km });
+    }
+  });
+  if (c.kmFecha && c.kmActual !== undefined) {
+    puntos.push({ fecha: new Date(c.kmFecha + 'T00:00:00'), km: c.kmActual });
+  }
+  puntos.sort((a, b) => a.fecha - b.fecha);
+  return puntos;
+}
+
+// Estima el km para una fecha dada, interpolando entre los dos puntos reales más cercanos.
+// Si la fecha cae antes del primer punto o después del último, extrapola usando el ritmo
+// del tramo más cercano (con un piso de 0 km, nunca negativo).
+function estimarKmParaFecha(fechaStr) {
+  const fecha = new Date(fechaStr + 'T00:00:00');
+  const puntos = puntosKmReales();
+  if (puntos.length === 0) return carroActivo().kmActual || 0;
+  if (puntos.length === 1) return puntos[0].km;
+
+  // Buscar el tramo [antes, despues] que contiene la fecha
+  let antes = null, despues = null;
+  for (let i = 0; i < puntos.length - 1; i++) {
+    if (fecha >= puntos[i].fecha && fecha <= puntos[i+1].fecha) {
+      antes = puntos[i]; despues = puntos[i+1];
+      break;
+    }
+  }
+  if (!antes) {
+    // Fecha fuera de rango: usar el tramo extremo más cercano para extrapolar
+    if (fecha < puntos[0].fecha) { antes = puntos[0]; despues = puntos[1]; }
+    else { antes = puntos[puntos.length - 2]; despues = puntos[puntos.length - 1]; }
+  }
+
+  const diasTramo = diasEntre(antes.fecha, despues.fecha);
+  const diasDesdeAntes = diasEntre(antes.fecha, fecha);
+  if (diasTramo <= 0) return antes.km;
+  const proporcion = diasDesdeAntes / diasTramo;
+  const kmEstimado = antes.km + (despues.km - antes.km) * proporcion;
+  return Math.max(0, Math.round(kmEstimado));
+}
+
+// Busca el último servicio que haya tocado un tipo+componente específico.
+// Si el tipo no tiene componentes (componente === null), busca coincidencia por tipo simple.
+// Si tiene componente, solo cuenta si ese componente específico fue marcado (o si se marcó el tipo "completo", sin desglosar).
+function ultimoServicioDeTipoComponente(tipo, componente) {
+  const servs = (carroActivo().servicios || [])
+    .filter(s => {
+      const items = s.items || (s.tipos ? s.tipos.map(t => ({ tipo: t, componentes: null })) : []);
+      return items.some(it => {
+        if (it.tipo !== tipo) return false;
+        if (!componente) return true; // tipo sin desglose
+        if (!it.componentes) return true; // se marcó el tipo completo, sin especificar => cuenta para todos los componentes
+        return it.componentes.indexOf(componente) !== -1;
+      });
+    })
+    .sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
   return servs[0] || null;
 }
 
@@ -1669,49 +1809,53 @@ function calcularSugerencias() {
   const c = carroActivo();
   const kmActual = c.kmActual || 0;
   const hoy = new Date(c.kmFecha + 'T00:00:00');
-  const ritmoKmMes = kmPorMes();
   const sugerencias = [];
 
   REGLAS_MANTENIMIENTO.forEach(regla => {
-    const ultimo = ultimoServicioDeTipo(regla.tipo);
-    let kmBase, fechaBase, esEstimado;
-    if (ultimo) {
-      kmBase = ultimo.km;
-      fechaBase = new Date(ultimo.fecha + 'T00:00:00');
-      esEstimado = false;
-    } else if (c.kmTomaPosesion !== null && c.kmTomaPosesion !== undefined && c.fechaTomaPosesion) {
-      // Sin historial de este servicio, pero sabemos desde cuándo tienes el carro:
-      // asumimos, de forma conservadora, que no se ha hecho desde que lo tomaste.
-      kmBase = c.kmTomaPosesion;
-      fechaBase = new Date(c.fechaTomaPosesion + 'T00:00:00');
-      esEstimado = true;
-    } else {
-      // No hay ni historial ni fecha de toma de posesión: lo más seguro es partir de HOY,
-      // no de 0km, para no sugerir falsos atrasos ni falsos "todo OK".
-      kmBase = kmActual;
-      fechaBase = hoy;
-      esEstimado = true;
-    }
+    // Genera una "sub-regla" por cada componente, o una sola si el tipo no tiene componentes
+    const subUnidades = regla.componentes ? regla.componentes.map(comp => ({ etiqueta: regla.tipo + ': ' + comp, componente: comp })) : [{ etiqueta: regla.tipo, componente: null }];
 
-    let kmObjetivo = regla.km !== null ? kmBase + regla.km : null;
-    let mesesObjetivo = regla.meses !== null ? regla.meses : null;
-    let fechaObjetivo = mesesObjetivo !== null ? new Date(fechaBase.getFullYear(), fechaBase.getMonth() + mesesObjetivo, fechaBase.getDate()) : null;
+    subUnidades.forEach(({ etiqueta, componente }) => {
+      const ultimo = ultimoServicioDeTipoComponente(regla.tipo, componente);
+      let kmBase, fechaBase, esEstimado;
+      if (ultimo) {
+        kmBase = ultimo.km;
+        fechaBase = new Date(ultimo.fecha + 'T00:00:00');
+        esEstimado = false;
+      } else if (c.kmTomaPosesion !== null && c.kmTomaPosesion !== undefined && c.fechaTomaPosesion) {
+        // Sin historial de este servicio, pero sabemos desde cuándo tienes el carro:
+        // asumimos, de forma conservadora, que no se ha hecho desde que lo tomaste.
+        kmBase = c.kmTomaPosesion;
+        fechaBase = new Date(c.fechaTomaPosesion + 'T00:00:00');
+        esEstimado = true;
+      } else {
+        // No hay ni historial ni fecha de toma de posesión: lo más seguro es partir de HOY,
+        // no de 0km, para no sugerir falsos atrasos ni falsos "todo OK".
+        kmBase = kmActual;
+        fechaBase = hoy;
+        esEstimado = true;
+      }
 
-    let kmRestantes = kmObjetivo !== null ? kmObjetivo - kmActual : null;
-    let mesesRestantes = fechaObjetivo !== null ? mesesEntre(hoy, fechaObjetivo) : null;
+      let kmObjetivo = regla.km !== null ? kmBase + regla.km : null;
+      let mesesObjetivo = regla.meses !== null ? regla.meses : null;
+      let fechaObjetivo = mesesObjetivo !== null ? new Date(fechaBase.getFullYear(), fechaBase.getMonth() + mesesObjetivo, fechaBase.getDate()) : null;
 
-    // Progreso 0-100% del intervalo consumido (usamos el criterio que esté más avanzado)
-    let progresoKm = (regla.km !== null) ? Math.min(1, Math.max(0, (kmActual - kmBase) / regla.km)) : null;
-    let progresoTiempo = (regla.meses !== null) ? Math.min(1, Math.max(0, mesesEntre(fechaBase, hoy) / regla.meses)) : null;
-    let progreso = Math.max(progresoKm || 0, progresoTiempo || 0);
+      let kmRestantes = kmObjetivo !== null ? kmObjetivo - kmActual : null;
+      let mesesRestantes = fechaObjetivo !== null ? mesesEntre(hoy, fechaObjetivo) : null;
 
-    let estado = 'ok';
-    if (progreso >= 1) estado = 'urgent';
-    else if (progreso >= 0.8) estado = 'soon';
+      // Progreso 0-100% del intervalo consumido (usamos el criterio que esté más avanzado)
+      let progresoKm = (regla.km !== null) ? Math.min(1, Math.max(0, (kmActual - kmBase) / regla.km)) : null;
+      let progresoTiempo = (regla.meses !== null) ? Math.min(1, Math.max(0, mesesEntre(fechaBase, hoy) / regla.meses)) : null;
+      let progreso = Math.max(progresoKm || 0, progresoTiempo || 0);
 
-    sugerencias.push({
-      tipo: regla.tipo, kmObjetivo, fechaObjetivo, kmRestantes, mesesRestantes, progreso, estado,
-      ultimo, kmBase, fechaBase, esEstimado
+      let estado = 'ok';
+      if (progreso >= 1) estado = 'urgent';
+      else if (progreso >= 0.8) estado = 'soon';
+
+      sugerencias.push({
+        tipo: etiqueta, kmObjetivo, fechaObjetivo, kmRestantes, mesesRestantes, progreso, estado,
+        ultimo, kmBase, fechaBase, esEstimado
+      });
     });
   });
 
@@ -1775,9 +1919,11 @@ function renderCarro() {
     const fondoNombre = s.fuentePago === 'fondo' ? ((db.fondosTerceros || []).find(f => f.id === s.fondoId) || {}).nombre : null;
     const desglose = (s.manoObra || s.materiales) ?
       ('Mano de obra: ' + formatMoney(s.manoObra||0) + ' · Materiales: ' + formatMoney(s.materiales||0)) : '';
+    const items = s.items || (s.tipos ? s.tipos.map(t => ({ tipo: t, componentes: null })) : []);
+    const nombreServicio = items.map(it => it.componentes ? (it.tipo + ' (' + it.componentes.join(', ') + ')') : it.tipo).join(' + ') || 'Servicio';
     return '<div class="service-item" onclick="openServicioModal(' + idxReal + ')">' +
-      '<div class="service-top"><div class="service-name">' + s.tipo + '</div><div class="service-cost">' + formatMoney(s.costo) + '</div></div>' +
-      '<div class="service-meta">' + s.fecha + ' · ' + Number(s.km||0).toLocaleString('es-MX') + ' km' + (s.taller ? ' · ' + s.taller : '') + '</div>' +
+      '<div class="service-top"><div class="service-name">' + nombreServicio + '</div><div class="service-cost">' + formatMoney(s.costo) + '</div></div>' +
+      '<div class="service-meta">' + s.fecha + ' · ' + Number(s.km||0).toLocaleString('es-MX') + ' km' + (s.kmEsEstimado ? ' (estimado)' : '') + (s.taller ? ' · ' + s.taller : '') + '</div>' +
       (desglose ? '<div class="service-meta">' + desglose + '</div>' : '') +
       (fondoNombre ? '<span class="badge fondo" style="margin-top:6px;display:inline-block">Fondo: ' + fondoNombre + '</span>' : '') +
       (s.notas ? '<div class="service-meta">' + s.notas + '</div>' : '') +
@@ -1803,7 +1949,7 @@ function openCarroDatosModal() {
     '<p class="row-sub" style="margin-bottom:12px">Cada vez que actualices el km aquí, la app recalcula el ritmo de uso (km/mes) para mejorar las sugerencias.</p>' +
     '<div class="field"><label>Km con el que tomaste posesión de este carro (si lo compraste usado)</label><input id="carKmToma" type="number" placeholder="Ej. 90000" value="' + (c.kmTomaPosesion !== null && c.kmTomaPosesion !== undefined ? c.kmTomaPosesion : '') + '"></div>' +
     '<div class="field"><label>Fecha en que lo tomaste</label><input id="carFechaToma" type="date" value="' + (c.fechaTomaPosesion || '') + '"></div>' +
-    '<p class="row-sub" style="margin-bottom:12px">Para los servicios sin historial (ej. balatas que nunca has registrado), las sugerencias se calculan desde este punto en vez de asumir 0 km — es lo más seguro cuando no sabes qué se le hizo antes.</p>' +
+    '<p class="row-sub" style="margin-bottom:12px">Para los servicios sin historial, las sugerencias se calculan desde este punto en vez de asumir 0 km. También se usa para ESTIMAR el km de un servicio pasado cuando registras uno y no recuerdas cuántos km tenía el carro en esa fecha.</p>' +
     '<button class="btn" onclick="saveCarroDatos()">Guardar</button>' +
     (db.carros.length > 1 ? '<button class="btn btn-danger" onclick="eliminarCarroActivo()">Eliminar este carro</button>' : '');
   document.getElementById('modalOverlay').classList.add('open');
@@ -1876,9 +2022,35 @@ function cambiarCarroActivo(id) {
 function openServicioModal(indexEditar) {
   const editando = indexEditar !== undefined;
   const s = editando ? carroActivo().servicios[indexEditar] : null;
-  const tiposOptions = REGLAS_MANTENIMIENTO.map(r => r.tipo)
-    .concat(['Gasolina', 'Verificación / Tenencia', 'Seguro', 'Refacción / Reparación', 'Otro'])
-    .map(t => '<option value="' + t + '"' + (s && s.tipo === t ? ' selected' : '') + '>' + t + '</option>').join('');
+  // items guardados: [{ tipo, componentes: [..] | null }]
+  const itemsSeleccionados = s ? (s.items || (s.tipos ? s.tipos.map(t => ({ tipo: t, componentes: null })) : [])) : [];
+  const tipoSeleccionado = (tipo) => itemsSeleccionados.find(it => it.tipo === tipo);
+
+  const catalogoTipos = REGLAS_MANTENIMIENTO.map(r => r.tipo)
+    .concat(['Gasolina', 'Verificación / Tenencia', 'Seguro', 'Refacción / Reparación']);
+
+  const checkboxesHtml = catalogoTipos.map((t) => {
+    const regla = reglaDeTipo(t);
+    const seleccion = tipoSeleccionado(t);
+    const marcado = !!seleccion;
+    let subHtml = '';
+    if (regla && regla.componentes) {
+      const compsMarcados = seleccion ? (seleccion.componentes || []) : [];
+      subHtml = '<div class="componentes-wrap' + (marcado ? '' : ' hidden') + '" id="comp-wrap-' + slugify(t) + '" style="margin:4px 0 8px 26px;padding:8px 12px;background:#0f0f1a;border-radius:8px">' +
+        '<div class="row-sub" style="margin-bottom:6px">¿Cuáles?</div>' +
+        regla.componentes.map(comp =>
+          '<label style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;font-weight:400">' +
+          '<input type="checkbox" class="servCompCheck" data-tipo="' + t + '" value="' + comp + '"' + (compsMarcados.indexOf(comp) !== -1 ? ' checked' : '') + '> ' + comp +
+          '</label>'
+        ).join('') + '</div>';
+    }
+    return '<div>' +
+      '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;font-weight:400">' +
+      '<input type="checkbox" class="servTipoCheck" value="' + t + '"' + (marcado ? ' checked' : '') + (regla && regla.componentes ? ' onchange="toggleComponentesWrap(\'' + slugify(t) + '\', this.checked)"' : '') + '> ' + t +
+      '</label>' + subHtml +
+      '</div>';
+  }).join('');
+
   const fuenteActual = s ? (s.fuentePago || 'normal') : 'normal';
   const fondosOptions = (db.fondosTerceros || []).map(f =>
     '<option value="' + f.id + '"' + (s && s.fondoId === f.id ? ' selected' : '') + '>' + f.nombre + '</option>'
@@ -1886,11 +2058,16 @@ function openServicioModal(indexEditar) {
   document.getElementById('modalContent').innerHTML =
     '<button class="close-modal" onclick="closeModal()">×</button>' +
     '<h2>' + (editando ? 'Editar servicio / gasto' : 'Registrar servicio / gasto del carro') + '</h2>' +
-    '<div class="field"><label>Tipo</label><select id="servTipo">' + tiposOptions + '</select></div>' +
-    '<div class="field-row">' +
-    '<div class="field"><label>Fecha</label><input id="servFecha" type="date" value="' + (s ? s.fecha : new Date().toISOString().slice(0,10)) + '"></div>' +
-    '<div class="field"><label>Km al momento</label><input id="servKm" type="number" value="' + (s ? s.km : carroActivo().kmActual) + '"></div>' +
+    '<div class="field"><label>¿Qué se hizo? (elige uno o más)</label>' +
+    '<div style="max-height:280px;overflow-y:auto;background:#1a1a2e;border-radius:8px;padding:8px 12px">' + checkboxesHtml + '</div>' +
+    '<p class="row-sub" style="margin-top:4px">Si el tipo tiene partes (ej. Llantas, Balatas), marca cuáles se cambiaron para que el resto siga con su propio conteo.</p>' +
     '</div>' +
+    '<div class="field"><label>Otro concepto no listado (opcional)</label><input id="servOtro" placeholder="Ej. Reparación de fuga de aceite" value="' + (s && s.otroConcepto ? s.otroConcepto : '') + '"></div>' +
+    '<div class="field-row">' +
+    '<div class="field"><label>Fecha</label><input id="servFecha" type="date" value="' + (s ? s.fecha : new Date().toISOString().slice(0,10)) + '" onchange="actualizarKmEstimadoPreview()"></div>' +
+    '<div class="field"><label>Km al momento (si no lo sabes, déjalo vacío)</label><input id="servKm" type="number" placeholder="Se estimará automáticamente" value="' + (s && !s.kmEsEstimado ? s.km : '') + '" onchange="marcarKmComoManual()" oninput="marcarKmComoManual()"></div>' +
+    '</div>' +
+    '<p class="row-sub" style="margin-top:-8px;margin-bottom:12px" id="servKmEstimadoPreview"></p>' +
     '<div class="field-row">' +
     '<div class="field"><label>Mano de obra</label><input id="servManoObra" type="number" placeholder="0.00" value="' + (s && s.manoObra !== undefined ? s.manoObra : '') + '"></div>' +
     '<div class="field"><label>Materiales / refacciones</label><input id="servMateriales" type="number" placeholder="0.00" value="' + (s && s.materiales !== undefined ? s.materiales : '') + '"></div>' +
@@ -1904,7 +2081,7 @@ function openServicioModal(indexEditar) {
     '<label>¿Qué fondo?</label><select id="servFondoId">' + fondosOptions + '</select>' +
     '<p class="row-sub" style="margin-top:4px">Este monto se descuenta del fondo y queda marcado como pendiente de reponer.</p></div>' +
     '<div class="field"><label>Taller / lugar (opcional)</label><input id="servTaller" value="' + (s && s.taller ? s.taller : '') + '"></div>' +
-    '<div class="field"><label>Qué se cambió / notas (opcional)</label><input id="servNotas" placeholder="Ej. Balatas delanteras y traseras, disco izq." value="' + (s && s.notas ? s.notas : '') + '"></div>' +
+    '<div class="field"><label>Notas adicionales (opcional)</label><input id="servNotas" placeholder="Ej. Disco delantero izquierdo con más desgaste" value="' + (s && s.notas ? s.notas : '') + '"></div>' +
     '<button class="btn" onclick="saveServicio(' + (editando ? indexEditar : 'undefined') + ')">Guardar</button>' +
     (editando ? '<button class="btn btn-danger" onclick="deleteServicio(' + indexEditar + ')">Eliminar</button>' : '');
   document.getElementById('modalOverlay').classList.add('open');
@@ -1912,6 +2089,36 @@ function openServicioModal(indexEditar) {
     const elInput = document.getElementById(id);
     if (elInput) elInput.addEventListener('input', updateServCostoPreview);
   });
+  actualizarKmEstimadoPreview();
+}
+
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function toggleComponentesWrap(slug, mostrar) {
+  const wrap = document.getElementById('comp-wrap-' + slug);
+  if (wrap) wrap.classList.toggle('hidden', !mostrar);
+}
+
+function marcarKmComoManual() {
+  // En cuanto el usuario escribe algo en el campo de km, dejamos de mostrar el preview de estimado
+  // (a menos que lo vuelva a vaciar, en cuyo caso reaparece la estimación)
+  actualizarKmEstimadoPreview();
+}
+
+function actualizarKmEstimadoPreview() {
+  const kmInput = document.getElementById('servKm');
+  const fechaInput = document.getElementById('servFecha');
+  const preview = document.getElementById('servKmEstimadoPreview');
+  if (!kmInput || !fechaInput || !preview) return;
+  if (kmInput.value !== '') {
+    preview.textContent = '';
+    return;
+  }
+  const fecha = fechaInput.value || new Date().toISOString().slice(0,10);
+  const estimado = estimarKmParaFecha(fecha);
+  preview.textContent = 'Km estimado para esta fecha (según tu ritmo de uso real): ~' + Number(estimado).toLocaleString('es-MX') + ' km';
 }
 
 function updateServCostoPreview() {
@@ -1926,9 +2133,29 @@ function toggleFondoWrap() {
 }
 
 function saveServicio(indexEditar) {
-  const tipo = document.getElementById('servTipo').value;
+  const tiposMarcados = Array.from(document.querySelectorAll('.servTipoCheck:checked')).map(el => el.value);
+  const otroConcepto = document.getElementById('servOtro').value.trim();
+
+  const items = tiposMarcados.map(tipo => {
+    const regla = reglaDeTipo(tipo);
+    if (regla && regla.componentes) {
+      const compsMarcados = Array.from(document.querySelectorAll('.servCompCheck[data-tipo="' + tipo + '"]:checked')).map(el => el.value);
+      // Si el tipo tiene componentes pero no marcó ninguno específico, asumimos que aplica a todos
+      // (ej. marcó "Balatas / frenos" sin especificar delantera/trasera => se asume completo)
+      return { tipo, componentes: compsMarcados.length > 0 ? compsMarcados : null };
+    }
+    return { tipo, componentes: null };
+  });
+  if (otroConcepto) items.push({ tipo: otroConcepto, componentes: null });
+  if (items.length === 0) items.push({ tipo: 'Otro', componentes: null });
+
+  // Nombres legibles para mostrar/guardar en fondos, historial, etc.
+  const nombresLegibles = items.map(it => it.componentes ? (it.tipo + ' (' + it.componentes.join(', ') + ')') : it.tipo);
+
   const fecha = document.getElementById('servFecha').value || new Date().toISOString().slice(0,10);
-  const km = parseFloat(document.getElementById('servKm').value) || 0;
+  const kmInputValue = document.getElementById('servKm').value;
+  const kmEsEstimado = kmInputValue === '';
+  const km = kmEsEstimado ? estimarKmParaFecha(fecha) : (parseFloat(kmInputValue) || 0);
   const manoObra = parseFloat(document.getElementById('servManoObra').value) || 0;
   const materiales = parseFloat(document.getElementById('servMateriales').value) || 0;
   const costo = manoObra + materiales;
@@ -1945,7 +2172,7 @@ function saveServicio(indexEditar) {
     }
   }
 
-  const nuevo = { tipo, fecha, km, manoObra, materiales, costo, taller, notas, fuentePago, fondoId };
+  const nuevo = { items, otroConcepto, fecha, km, kmEsEstimado, manoObra, materiales, costo, taller, notas, fuentePago, fondoId };
   let idxUsado;
   if (indexEditar !== undefined) {
     carroActivo().servicios[indexEditar] = nuevo;
@@ -1962,12 +2189,13 @@ function saveServicio(indexEditar) {
       tipo: 'gasto',
       monto: -Math.abs(costo),
       fecha,
-      concepto: 'Gasto carro: ' + tipo
+      concepto: 'Gasto carro: ' + nombresLegibles.join(', ')
     });
   }
 
-  // Si el km del servicio es mayor al km actual guardado, actualizamos el odómetro
-  if (km > (carroActivo().kmActual || 0)) {
+  // Si el km del servicio es mayor al km actual guardado, actualizamos el odómetro.
+  // Solo con km REAL: un km estimado nunca debe convertirse en la lectura oficial del carro.
+  if (!kmEsEstimado && km > (carroActivo().kmActual || 0)) {
     if (!carroActivo().kmInicial) { carroActivo().kmInicial = carroActivo().kmActual; carroActivo().kmInicialFecha = carroActivo().kmFecha; }
     carroActivo().kmActual = km;
     carroActivo().kmFecha = fecha;
